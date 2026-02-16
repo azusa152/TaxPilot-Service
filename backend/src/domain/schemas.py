@@ -46,6 +46,43 @@ class IncomeEntryResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# --- Algorithm Registry ---
+class AlgorithmCreate(BaseModel):
+    function_name: str = Field(description="Name of the calculation function")
+    version: str = Field(description="Version string (e.g., '2024.1')")
+    code_content: str = Field(description="Python source code of the calculation function")
+    source_law_hash: str | None = Field(None, description="Hash of the NTA regulation text")
+
+
+class AlgorithmResponse(BaseModel):
+    id: int = Field(description="Algorithm ID")
+    function_name: str = Field(description="Name of the calculation function")
+    version: str = Field(description="Version string")
+    status: str = Field(description="DRAFT, ACTIVE, or ARCHIVED")
+    source_law_hash: str | None = Field(description="Hash of the source law text for change detection")
+
+    model_config = {"from_attributes": True}
+
+
+# --- Tax Calculation ---
+class TaxCalculationResult(BaseModel):
+    user_id: str = Field(description="UUID of the user")
+    year: int = Field(description="Tax year")
+    gross_salary: int = Field(description="Total gross salary for the year in JPY")
+    salary_income_deduction: int = Field(description="Salary income deduction amount")
+    total_income: int = Field(description="Income after salary deduction")
+    basic_deduction: int = Field(description="Basic deduction amount")
+    social_insurance_deduction: int = Field(description="Social insurance deduction amount")
+    life_insurance_deduction: int = Field(description="Life insurance deduction amount")
+    spouse_deduction: int = Field(description="Spouse deduction amount")
+    dependents_deduction: int = Field(description="Dependents deduction amount")
+    ideco_deduction: int = Field(description="iDeCo deduction amount")
+    total_deductions: int = Field(description="Sum of all deductions")
+    taxable_income: int = Field(description="Taxable income after all deductions")
+    income_tax: int = Field(description="Calculated income tax amount")
+    furusato_limit: int = Field(description="Optimal Furusato Nouzei donation limit")
+
+
 # --- Tax Profile ---
 class TaxProfileUpdate(BaseModel):
     has_spouse: bool = Field(False, description="Whether the user has a spouse for tax purposes")
