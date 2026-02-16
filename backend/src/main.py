@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from src.api.error_handlers import register_error_handlers
 from src.api.health_routes import router as health_router
 from src.api.income_routes import router as income_router
+from src.api.ingestion_routes import router as ingestion_router
 from src.api.profile_routes import router as profile_router
 from src.api.user_routes import router as user_router
 from src.logging_config import get_logger
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
     application.include_router(user_router)
     application.include_router(income_router)
     application.include_router(profile_router)
+    application.include_router(ingestion_router)
     return application
 
 

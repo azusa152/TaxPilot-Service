@@ -39,7 +39,7 @@ class IncomeEntry(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
-    payment_date: Mapped[date] = mapped_column(Date, nullable=False)
+    payment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     income_type: Mapped[str] = mapped_column(Enum("SALARY", "BONUS", "OTHER", name="income_type_enum"), nullable=False)
     gross_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     social_insurance: Mapped[int] = mapped_column(Integer, default=0)

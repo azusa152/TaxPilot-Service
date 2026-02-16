@@ -33,7 +33,7 @@ class IncomeEntryCreate(BaseModel):
 class IncomeEntryResponse(BaseModel):
     id: int = Field(description="Income entry ID")
     user_id: str = Field(description="UUID of the user")
-    payment_date: date = Field(description="Date the payment was received")
+    payment_date: date | None = Field(description="Date the payment was received (null if pending extraction)")
     income_type: IncomeType = Field(description="Type of income")
     gross_amount: int = Field(description="Gross income amount in JPY")
     social_insurance: int = Field(description="Social insurance deduction in JPY")
