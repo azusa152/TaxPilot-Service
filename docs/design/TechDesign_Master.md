@@ -253,10 +253,49 @@ Agents branch on `error_code`, not string matching.
 
 ### 6.4 Testing Strategy
 
-- **Unit tests:** Domain logic (tax calculations) — pure functions, no mocks needed.
-- **Integration tests:** API endpoints via `httpx.AsyncClient` + `ASGITransport`.
-- **Mock boundary:** MarkItDown, external APIs, and DB (where needed) are mocked in unit tests.
+> Full policy: `.cursor/rules/testing-policy.md`
+
+#### Philosophy: "Zero Tolerance for Math Errors"
+
+Tax calculation is deterministic. All final JPY amounts use exact integer assertions — never `approx()` or floating-point comparisons.
+
+#### Test Layers
+
+| Layer | Target | Mock DB? | Mock External? | Purpose |
+|-------|--------|----------|----------------|---------|
+| **Unit** | `domain/tax_calculations.py` | N/A | N/A | Pure function logic, 100% branch coverage |
+| **Service** | `application/tax_service.py` | Yes | Yes | Orchestration correctness |
+| **Integration** | `api/*_routes.py` | No (test container) | Yes | HTTP + DB round-trip |
+| **Adapter** | `infrastructure/*` | Yes | Yes | Data transformation boundaries |
+
+#### Golden Data Protocol
+
+Official government tools serve as the "oracle" for expected values:
+- **Income Tax:** NTA Kakutei Shinkoku Corner (https://www.keisan.nta.go.jp/)
+- **Furusato Nozei:** MIC Simulation Excel
+- **Resident Tax:** Local government simulators
+
+Golden data files live in `backend/tests/golden_data/` as JSON with full traceability (tax year, oracle source, verified date, law references). AI agents must **never** invent expected tax values — only use NTA-verified data.
+
+#### Tax-Specific Test Requirements
+
+1. **Year-versioned regression:** Adding new tax year logic must not break existing year tests.
+2. **Boundary tests:** Every bracket threshold tested at ± 1 JPY.
+3. **Invariant tests:** Tax >= 0, monotonically increasing, effective rate bounded, taxable income floors to zero.
+4. **Cross-deduction scenarios:** Realistic combinations (married + dependents + iDeCo + insurance).
+
+#### Coverage Targets
+
+| Scope | Threshold |
+|-------|-----------|
+| `domain/` (tax logic) | >= 95% branch coverage |
+| Overall backend | >= 80% line coverage |
+
+#### Tooling
+
 - **Async:** `asyncio_mode = "auto"` in `pyproject.toml` — no manual `@pytest.mark.asyncio`.
+- **HTTP client:** `httpx.AsyncClient` + `ASGITransport` for API integration tests.
+- **Mocking:** `unittest.mock.patch` or `pytest-mock`. **Never** mock `domain/tax_calculations.py`.
 
 ---
 

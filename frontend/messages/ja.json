@@ -133,5 +133,43 @@
       "uploadFailed": "アップロードに失敗しました。再度お試しください。",
       "tooLarge": "ファイルが大きすぎます。小さいファイルをアップロードしてください。"
     }
+  },
+  "calculate": {
+    "title": "税額計算",
+    "yearLabel": "対象年度",
+    "calculate": "税額を計算",
+    "calculating": "計算中…",
+    "addIncome": "収入を追加",
+    "editProfile": "税務プロファイルを編集",
+    "recalculate": "再計算",
+    "print": "印刷",
+    "result": {
+      "title": "計算結果",
+      "grossSalary": "給与総額",
+      "salaryIncomeDeduction": "給与所得控除",
+      "totalIncome": "総所得金額",
+      "deductions": "控除の内訳",
+      "basicDeduction": "基礎控除",
+      "socialInsuranceDeduction": "社会保険料控除",
+      "lifeInsuranceDeduction": "生命保険料控除",
+      "spouseDeduction": "配偶者控除",
+      "dependentsDeduction": "扶養控除",
+      "idecoDeduction": "iDeCo控除（小規模企業共済等掛金控除）",
+      "totalDeductions": "控除合計",
+      "taxableIncome": "課税所得",
+      "incomeTax": "所得税額",
+      "furusatoLimit": "ふるさと納税上限額",
+      "furusatoNote": "ふるさと納税（ふるさと寄附金）の最適な寄附上限額の目安です。この金額までの寄附は全額控除の対象となります。"
+    },
+    "chart": {
+      "title": "所得の内訳",
+      "salaryIncomeDeduction": "給与所得控除",
+      "deductions": "控除",
+      "taxableIncome": "課税所得"
+    },
+    "error": {
+      "calculationFailed": "税額計算に失敗しました。収入データと税務プロファイルを確認してください。",
+      "noData": "計算できません。この年度の収入データと税務プロファイルがあることを確認してください。"
+    }
   }
 }

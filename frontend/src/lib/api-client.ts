@@ -270,6 +270,38 @@ export async function getProfileDefinition(
 }
 
 // ---------------------------------------------------------------------------
+// Tax Calculation
+// ---------------------------------------------------------------------------
+
+export interface TaxCalculationResult {
+  user_id: string;
+  year: number;
+  gross_salary: number;
+  salary_income_deduction: number;
+  total_income: number;
+  basic_deduction: number;
+  social_insurance_deduction: number;
+  life_insurance_deduction: number;
+  spouse_deduction: number;
+  dependents_deduction: number;
+  ideco_deduction: number;
+  total_deductions: number;
+  taxable_income: number;
+  income_tax: number;
+  furusato_limit: number;
+}
+
+export async function calculateTax(
+  userId: string,
+  year: number,
+): Promise<TaxCalculationResult> {
+  return clientRequest<TaxCalculationResult>(
+    `/tax/calculate/${userId}/${year}`,
+    { method: "POST" },
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Document Ingestion
 // ---------------------------------------------------------------------------
 

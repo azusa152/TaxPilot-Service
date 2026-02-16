@@ -57,3 +57,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Print-friendly layout for tax calculation results */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  header,
+  aside,
+  nav,
+  footer {
+    display: none !important;
+  }
+}

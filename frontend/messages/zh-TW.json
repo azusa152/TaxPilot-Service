@@ -133,5 +133,43 @@
       "uploadFailed": "上傳失敗。請重試。",
       "tooLarge": "檔案過大。請上傳較小的檔案。"
     }
+  },
+  "calculate": {
+    "title": "稅額計算",
+    "yearLabel": "稅務年度",
+    "calculate": "計算稅額",
+    "calculating": "計算中…",
+    "addIncome": "新增收入",
+    "editProfile": "編輯稅務資料",
+    "recalculate": "重新計算",
+    "print": "列印",
+    "result": {
+      "title": "計算結果",
+      "grossSalary": "薪資總額",
+      "salaryIncomeDeduction": "薪資所得扣除額",
+      "totalIncome": "總所得金額",
+      "deductions": "扣除明細",
+      "basicDeduction": "基本扣除額",
+      "socialInsuranceDeduction": "社會保險扣除額",
+      "lifeInsuranceDeduction": "人壽保險扣除額",
+      "spouseDeduction": "配偶扣除額",
+      "dependentsDeduction": "扶養扣除額",
+      "idecoDeduction": "iDeCo 扣除額",
+      "totalDeductions": "扣除合計",
+      "taxableIncome": "課稅所得",
+      "incomeTax": "所得稅額",
+      "furusatoLimit": "故鄉稅捐款上限",
+      "furusatoNote": "此為故鄉稅（ふるさと納税）最佳捐款上限的估算值。在此金額以內的捐款可全額抵扣。"
+    },
+    "chart": {
+      "title": "所得結構",
+      "salaryIncomeDeduction": "薪資所得扣除額",
+      "deductions": "扣除額",
+      "taxableIncome": "課稅所得"
+    },
+    "error": {
+      "calculationFailed": "稅額計算失敗。請檢查收入項目及稅務資料。",
+      "noData": "無法計算。請確認此年度已有收入項目及稅務資料。"
+    }
   }
 }

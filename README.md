@@ -67,6 +67,38 @@ backend/src/
 └── main.py           # FastAPI app factory
 ```
 
+## Testing & Quality Assurance
+
+TaxPilot follows a **"Zero Tolerance for Math Errors"** policy. Tax calculations are deterministic — all JPY amounts use exact integer assertions, never floating-point approximations.
+
+### Test Pyramid
+
+| Layer | Target | Coverage |
+|-------|--------|----------|
+| **Unit** | `domain/tax_calculations.py` — pure functions | >= 95% branch |
+| **Service** | `application/` — orchestration | Mocked DB |
+| **Integration** | `api/` — HTTP + DB round-trip | All status codes |
+| **Golden Data** | NTA-verified input/output pairs | 100% pass rate |
+
+### Golden Data Protocol
+
+Expected tax values are verified against **official government tools** (NTA Kakutei Shinkoku Corner, MIC Furusato Simulation), not invented. Golden data files in `backend/tests/golden_data/` include full traceability: tax year, oracle source, verification date, and law references.
+
+### Run Tests
+
+```bash
+# Run all tests
+make test
+
+# Run with coverage
+docker-compose run --rm api pytest --cov=src --cov-branch
+
+# Run domain tests only (tax logic)
+docker-compose run --rm api pytest tests/domain/ -v
+```
+
+See [.cursor/rules/testing-policy.md](.cursor/rules/testing-policy.md) for the full testing policy.
+
 ## Architecture
 
 Clean Architecture with strict layer separation:

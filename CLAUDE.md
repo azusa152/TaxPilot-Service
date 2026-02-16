@@ -17,7 +17,7 @@ All rules live in `.cursor/rules/` (single source of truth):
 | `project-core.mdc` | Always — project role, architecture, and stack |
 | `coding-standards.mdc` | Before writing any code — Clean Architecture, layers, style guide |
 | `ai-agent-friendly.mdc` | When designing APIs — structured responses, schema discovery, error codes |
-| `testing.mdc` | When writing tests — pytest standards, AAA pattern, coverage requirements |
+| `testing-policy.md` | When writing tests — pytest standards, golden data protocol, boundary tests, invariants, coverage thresholds |
 | `git-conventions.mdc` | Before committing — commit format, branch naming, workflow |
 | `python-tooling.mdc` | When working with Python — ruff, logging, dependencies |
 | `docker.mdc` | When working with Docker — containers, volumes, entrypoint patterns |

@@ -133,5 +133,43 @@
       "uploadFailed": "Failed to upload document. Please try again.",
       "tooLarge": "File is too large. Please upload a smaller file."
     }
+  },
+  "calculate": {
+    "title": "Tax Calculation",
+    "yearLabel": "Tax Year",
+    "calculate": "Calculate Tax",
+    "calculating": "Calculating…",
+    "addIncome": "Add Income",
+    "editProfile": "Edit Tax Profile",
+    "recalculate": "Recalculate",
+    "print": "Print",
+    "result": {
+      "title": "Calculation Results",
+      "grossSalary": "Gross Salary",
+      "salaryIncomeDeduction": "Salary Income Deduction",
+      "totalIncome": "Total Income",
+      "deductions": "Deductions Breakdown",
+      "basicDeduction": "Basic Deduction",
+      "socialInsuranceDeduction": "Social Insurance Deduction",
+      "lifeInsuranceDeduction": "Life Insurance Deduction",
+      "spouseDeduction": "Spouse Deduction",
+      "dependentsDeduction": "Dependents Deduction",
+      "idecoDeduction": "iDeCo Deduction",
+      "totalDeductions": "Total Deductions",
+      "taxableIncome": "Taxable Income",
+      "incomeTax": "Income Tax",
+      "furusatoLimit": "Furusato Nozei Limit",
+      "furusatoNote": "This is the estimated optimal donation limit for Furusato Nozei (Hometown Tax). Donations up to this amount can be fully deducted."
+    },
+    "chart": {
+      "title": "Income Breakdown",
+      "salaryIncomeDeduction": "Salary Income Deduction",
+      "deductions": "Deductions",
+      "taxableIncome": "Taxable Income"
+    },
+    "error": {
+      "calculationFailed": "Tax calculation failed. Please check your income entries and tax profile.",
+      "noData": "Unable to calculate. Please ensure you have income entries and a tax profile for this year."
+    }
   }
 }

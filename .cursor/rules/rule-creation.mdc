@@ -106,7 +106,7 @@ class IncomeEntry(BaseModel):
 Split large rules into focused files:
 
 - BAD: `coding-standards.mdc` (200 lines covering Python + Docker + Testing + Security)
-- GOOD: Separate files for `python-tooling.mdc`, `docker.mdc`, `testing.mdc`, `security.mdc`
+- GOOD: Separate files for `python-tooling.mdc`, `docker.mdc`, `testing-policy.md`, `security.mdc`
 
 ### Avoid Duplication
 - Don't copy entire style guides (use a linter instead)
@@ -126,7 +126,7 @@ All project rules live in:
 ├── project-core.mdc
 ├── coding-standards.mdc
 ├── python-tooling.mdc
-├── testing.mdc
+├── testing-policy.md
 ├── docker.mdc
 ├── security.mdc
 ├── git-conventions.mdc
