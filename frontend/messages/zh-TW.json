@@ -6,6 +6,15 @@
     "welcomeSubtitle": "您的日本報稅智慧助手。在一個地方管理收入、建立稅務資料、計算稅額。",
     "getStarted": "開始使用",
     "notFound": "找不到頁面",
+    "loading": "載入中…",
+    "error": "發生錯誤",
+    "retry": "重試",
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "confirm": "確認",
+    "back": "返回",
+    "noData": "尚無資料",
     "nav": {
       "home": "首頁",
       "income": "收入",
@@ -24,6 +33,55 @@
       "en": "English",
       "zh-TW": "繁體中文",
       "switchLocale": "語言"
+    }
+  },
+  "onboarding": {
+    "title": "建立帳號",
+    "subtitle": "輸入您的姓名以開始使用 TaxPilot。",
+    "displayName": "顯示名稱",
+    "displayNamePlaceholder": "例如：山田太郎",
+    "submit": "建立帳號",
+    "creating": "建立中…"
+  },
+  "income": {
+    "title": "收入項目",
+    "addNew": "新增收入",
+    "empty": "尚無收入項目。新增您的第一筆收入以開始使用。",
+    "deleteConfirm": "確定要刪除此收入項目嗎？",
+    "deleting": "刪除中…",
+    "table": {
+      "date": "支付日期",
+      "type": "類型",
+      "gross": "總額",
+      "socialInsurance": "社會保險",
+      "withholdingTax": "預扣稅",
+      "residentTax": "住民稅",
+      "actions": "操作"
+    },
+    "type": {
+      "SALARY": "薪資",
+      "BONUS": "獎金",
+      "OTHER": "其他"
+    },
+    "form": {
+      "title": "新增收入項目",
+      "paymentDate": "支付日期",
+      "incomeType": "收入類型",
+      "selectType": "選擇類型…",
+      "grossAmount": "總額（日圓）",
+      "socialInsurance": "社會保險（日圓）",
+      "withholdingTax": "預扣稅（日圓）",
+      "residentTax": "住民稅（日圓）",
+      "submit": "新增",
+      "submitting": "新增中…",
+      "success": "收入項目已成功新增。",
+      "validation": {
+        "dateRequired": "支付日期為必填",
+        "typeRequired": "收入類型為必填",
+        "grossRequired": "總額為必填",
+        "grossPositive": "總額必須為正數",
+        "amountNonNegative": "金額不可為負數"
+      }
     }
   }
 }

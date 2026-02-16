@@ -6,6 +6,15 @@
     "welcomeSubtitle": "日本の確定申告をインテリジェントにサポートします。収入管理、税務プロファイルの作成、税額計算をワンストップで。",
     "getStarted": "はじめる",
     "notFound": "ページが見つかりません",
+    "loading": "読み込み中…",
+    "error": "エラーが発生しました",
+    "retry": "再試行",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "confirm": "確認",
+    "back": "戻る",
+    "noData": "データがありません",
     "nav": {
       "home": "ホーム",
       "income": "収入",
@@ -24,6 +33,55 @@
       "en": "English",
       "zh-TW": "繁體中文",
       "switchLocale": "言語"
+    }
+  },
+  "onboarding": {
+    "title": "アカウント作成",
+    "subtitle": "TaxPilotを始めるために、お名前を入力してください。",
+    "displayName": "表示名",
+    "displayNamePlaceholder": "例: 山田太郎",
+    "submit": "アカウント作成",
+    "creating": "作成中…"
+  },
+  "income": {
+    "title": "収入一覧",
+    "addNew": "収入を追加",
+    "empty": "収入データがありません。最初の収入を追加してください。",
+    "deleteConfirm": "この収入データを削除してもよろしいですか？",
+    "deleting": "削除中…",
+    "table": {
+      "date": "支払日",
+      "type": "種別",
+      "gross": "総支給額",
+      "socialInsurance": "社会保険料",
+      "withholdingTax": "源泉徴収税",
+      "residentTax": "住民税",
+      "actions": "操作"
+    },
+    "type": {
+      "SALARY": "給与",
+      "BONUS": "賞与",
+      "OTHER": "その他"
+    },
+    "form": {
+      "title": "収入を追加",
+      "paymentDate": "支払日",
+      "incomeType": "収入種別",
+      "selectType": "種別を選択…",
+      "grossAmount": "総支給額（円）",
+      "socialInsurance": "社会保険料（円）",
+      "withholdingTax": "源泉徴収税（円）",
+      "residentTax": "住民税（円）",
+      "submit": "追加",
+      "submitting": "追加中…",
+      "success": "収入データを追加しました。",
+      "validation": {
+        "dateRequired": "支払日は必須です",
+        "typeRequired": "収入種別は必須です",
+        "grossRequired": "総支給額は必須です",
+        "grossPositive": "総支給額は正の値を入力してください",
+        "amountNonNegative": "金額は0以上を入力してください"
+      }
     }
   }
 }

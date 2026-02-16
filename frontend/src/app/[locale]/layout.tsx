@@ -6,6 +6,7 @@ import { routing } from "@/i18n/routing";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
+import { UserProvider } from "@/lib/user-context";
 import "@/app/globals.css";
 
 export function generateStaticParams() {
@@ -48,14 +49,16 @@ export default async function LocaleLayout({
     <html lang={locale}>
       <body className="min-h-screen font-sans antialiased">
         <NextIntlClientProvider messages={messages}>
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <div className="flex flex-1">
-              <Sidebar />
-              <main className="flex-1 p-4 md:p-6">{children}</main>
+          <UserProvider>
+            <div className="flex min-h-screen flex-col">
+              <Header />
+              <div className="flex flex-1">
+                <Sidebar />
+                <main className="flex-1 p-4 md:p-6">{children}</main>
+              </div>
+              <Footer />
             </div>
-            <Footer />
-          </div>
+          </UserProvider>
         </NextIntlClientProvider>
       </body>
     </html>

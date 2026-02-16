@@ -6,6 +6,15 @@
     "welcomeSubtitle": "Your intelligent assistant for Japanese tax filing. Manage income, build your tax profile, and calculate your obligations — all in one place.",
     "getStarted": "Get Started",
     "notFound": "Page not found",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "noData": "No data yet",
     "nav": {
       "home": "Home",
       "income": "Income",
@@ -24,6 +33,55 @@
       "en": "English",
       "zh-TW": "Traditional Chinese",
       "switchLocale": "Language"
+    }
+  },
+  "onboarding": {
+    "title": "Create Your Account",
+    "subtitle": "Enter your name to get started with TaxPilot.",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "e.g. Taro Yamada",
+    "submit": "Create Account",
+    "creating": "Creating…"
+  },
+  "income": {
+    "title": "Income Entries",
+    "addNew": "Add Income",
+    "empty": "No income entries yet. Add your first income entry to get started.",
+    "deleteConfirm": "Are you sure you want to delete this income entry?",
+    "deleting": "Deleting…",
+    "table": {
+      "date": "Payment Date",
+      "type": "Type",
+      "gross": "Gross Amount",
+      "socialInsurance": "Social Insurance",
+      "withholdingTax": "Withholding Tax",
+      "residentTax": "Resident Tax",
+      "actions": "Actions"
+    },
+    "type": {
+      "SALARY": "Salary",
+      "BONUS": "Bonus",
+      "OTHER": "Other"
+    },
+    "form": {
+      "title": "Add Income Entry",
+      "paymentDate": "Payment Date",
+      "incomeType": "Income Type",
+      "selectType": "Select type…",
+      "grossAmount": "Gross Amount (JPY)",
+      "socialInsurance": "Social Insurance (JPY)",
+      "withholdingTax": "Withholding Tax (JPY)",
+      "residentTax": "Resident Tax (JPY)",
+      "submit": "Add Entry",
+      "submitting": "Adding…",
+      "success": "Income entry added successfully.",
+      "validation": {
+        "dateRequired": "Payment date is required",
+        "typeRequired": "Income type is required",
+        "grossRequired": "Gross amount is required",
+        "grossPositive": "Gross amount must be positive",
+        "amountNonNegative": "Amount cannot be negative"
+      }
     }
   }
 }
