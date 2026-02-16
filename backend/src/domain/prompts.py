@@ -57,3 +57,58 @@ tax rules as structured data.
 
 Respond with structured JSON matching the RegulationAnalysis schema.
 """
+
+
+# --- Code & Schema Generator (Phase 6D) ---
+CODE_GENERATION_PROMPT = """You are a Python tax calculation expert. Generate an updated
+pure Python function based on the following law change.
+
+## Law Change:
+- Type: {change_type}
+- Affected function: {affected_function}
+- Description: {description}
+- Old value: {old_value}
+- New value: {new_value}
+
+## Current function code:
+{current_code}
+
+## Requirements:
+1. The function must be a PURE Python function — no imports, no side effects, no I/O.
+2. The function name must be exactly: {affected_function}
+3. The function signature should match the current version (or add new parameters if NEW_FIELD_REQUIRED).
+4. All amounts are in JPY (integers).
+5. Include a Google-style docstring with:
+   - Brief description of what the function calculates
+   - The NTA regulation reference
+   - The tax year this version applies to
+6. Use clear variable names and comments for threshold boundaries.
+7. Return ONLY the function definition — no imports, no class wrappers, no test code.
+
+## Admin hints (if any):
+{admin_hints}
+
+Respond with structured JSON matching the CodeGenerationResult schema.
+"""
+
+
+SCHEMA_GENERATION_PROMPT = """You are a Japanese tax system expert. Based on the following
+law changes, determine if any new user input fields are needed in the tax profile.
+
+## Identified law changes:
+{changes_json}
+
+## Current ProfileDefinition fields:
+{current_fields}
+
+## Instructions:
+1. For each law change of type NEW_FIELD_REQUIRED, propose a new field definition.
+2. For threshold or rate changes, check if existing fields are sufficient.
+3. Each new field needs: name (snake_case), type (int/float/bool/str), required flag,
+   English description, Japanese description, and default value.
+4. If no new fields are needed, return an empty new_fields list.
+5. Check if any existing fields should be removed (rare — usually only on regulation removal).
+6. Provide a clear rationale for the schema changes.
+
+Respond with structured JSON matching the SchemaChangeProposal schema.
+"""

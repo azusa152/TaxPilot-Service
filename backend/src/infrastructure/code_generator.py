@@ -1,82 +1,127 @@
-"""LLM-assisted code generation for tax calculation patches.
+"""LLM-assisted code generation for tax calculation functions.
 
-Skeleton implementation. Generates Python code patches from
-law change descriptions using an LLM.
+Generates updated Python code from law change descriptions using LiteLLM
+structured output. Validates all generated code via CodeSandbox before
+storing as DRAFT in AlgorithmRegistry.
 """
-from dataclasses import dataclass
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domain.enums import AlgorithmStatus
+from src.domain.exceptions import LlmCallError
+from src.domain.prompts import CODE_GENERATION_PROMPT
+from src.domain.schemas import CodeGenerationResult, LawChange
+from src.infrastructure.code_sandbox import CodeSandbox
+from src.infrastructure.llm_service import LlmService
+from src.infrastructure.models import AlgorithmRegistry, GenerationAttempt
 from src.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 
-@dataclass
-class CodePatch:
-    """A generated code patch for a tax calculation function."""
-
-    function_name: str
-    version: str
-    code_content: str
-    source_law_hash: str
-    description: str
-
-
 class CodeGenerator:
-    """Generates Python code patches from law change descriptions."""
+    """Generates updated tax calculation code from law changes.
 
-    async def generate_patch(
+    Uses LLM via LlmService with structured output for reliable code generation.
+    Validates all generated code via CodeSandbox before storing as DRAFT.
+    """
+
+    def __init__(self, llm_service: LlmService, db: AsyncSession):
+        self.llm = llm_service
+        self.db = db
+
+    async def generate(
         self,
-        function_name: str,
+        law_change: LawChange,
         current_code: str,
-        change_description: str,
-        source_law_hash: str,
-    ) -> CodePatch:
-        """Generate a code patch based on a law change description.
+        evolution_run_id: int,
+        attempt_number: int = 1,
+        admin_hints: str = "",
+    ) -> tuple[CodeGenerationResult, bool]:
+        """Generate updated code for a law change.
 
         Args:
-            function_name: Name of the function to patch.
-            current_code: Current Python source code of the function.
-            change_description: Natural language description of the law change.
-            source_law_hash: Hash of the new law text.
+            law_change: The structured law change to implement.
+            current_code: Current source code of the affected function.
+            evolution_run_id: ID of the evolution run for tracking.
+            attempt_number: Which attempt this is (1 for initial, 2+ for regeneration).
+            admin_hints: Optional hints from admin for regeneration.
 
         Returns:
-            CodePatch with the generated code.
+            Tuple of (CodeGenerationResult, validation_passed: bool).
         """
-        # STUB: In production, this calls an LLM API with a structured prompt
-        # containing the current code and change description.
-        logger.info("Generating code patch for '%s' based on: %s", function_name, change_description)
-
-        # For now, return the current code unchanged with a bumped version
-        return CodePatch(
-            function_name=function_name,
-            version="auto-generated",
-            code_content=current_code,
-            source_law_hash=source_law_hash,
-            description=f"Auto-generated patch: {change_description}",
+        prompt = CODE_GENERATION_PROMPT.format(
+            change_type=law_change.change_type,
+            affected_function=law_change.affected_function,
+            description=law_change.description,
+            old_value=law_change.old_value,
+            new_value=law_change.new_value,
+            current_code=current_code,
+            admin_hints=admin_hints or "None",
         )
 
-    def build_prompt(self, function_name: str, current_code: str, change_description: str) -> str:
-        """Build the LLM prompt for code generation.
+        # Call LLM with structured output — store failed attempt on error
+        try:
+            result = await self.llm.generate_structured(
+                messages=[{"role": "user", "content": prompt}],
+                response_format=CodeGenerationResult,
+                caller="code_generator",
+                evolution_run_id=evolution_run_id,
+            )
+        except LlmCallError as e:
+            # Store failed attempt for audit trail, then re-raise
+            attempt = GenerationAttempt(
+                evolution_run_id=evolution_run_id,
+                attempt_number=attempt_number,
+                generated_code="",
+                validation_passed=False,
+                validation_errors={"errors": [str(e)]},
+                admin_hints=admin_hints or None,
+            )
+            self.db.add(attempt)
+            await self.db.flush()
+            raise
 
-        This is exposed for testing and debugging the prompt template.
-        """
-        return f"""You are a Japanese tax calculation expert and Python developer.
+        # Validate the generated code via RestrictedPython
+        validation = CodeSandbox.validate(
+            code=result.code_content,
+            expected_function_name=result.function_name,
+        )
 
-The following Python function calculates {function_name}:
+        # Store the generation attempt
+        attempt = GenerationAttempt(
+            evolution_run_id=evolution_run_id,
+            attempt_number=attempt_number,
+            generated_code=result.code_content,
+            validation_passed=validation.passed,
+            validation_errors=(
+                {"errors": validation.errors, "warnings": validation.warnings}
+                if not validation.passed
+                else None
+            ),
+            admin_hints=admin_hints or None,
+        )
+        self.db.add(attempt)
 
-```python
-{current_code}
-```
+        # If validation passed, store as DRAFT in AlgorithmRegistry
+        if validation.passed:
+            draft = AlgorithmRegistry(
+                function_name=result.function_name,
+                version=result.version,
+                code_content=result.code_content,
+                status=AlgorithmStatus.DRAFT,
+                source_law_hash=None,  # Set later when linked to snapshot
+            )
+            self.db.add(draft)
+            logger.info(
+                f"Generated code for {result.function_name} v{result.version} "
+                f"(attempt {attempt_number}) — validation PASSED"
+            )
+        else:
+            logger.warning(
+                f"Generated code for {result.function_name} v{result.version} "
+                f"(attempt {attempt_number}) — validation FAILED: {validation.errors}"
+            )
 
-The National Tax Agency has published the following change:
-{change_description}
-
-Generate an updated version of this function that incorporates the new rules.
-Requirements:
-- Keep the function signature identical.
-- All amounts in JPY (integers).
-- Include comments referencing the specific NTA regulation.
-- The function must be pure (no side effects, no external dependencies).
-
-Return ONLY the Python function code, no explanation.
-"""
+        await self.db.flush()
+        return result, validation.passed

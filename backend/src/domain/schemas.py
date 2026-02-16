@@ -280,3 +280,71 @@ class RegulationAnalysis(BaseModel):
         description="True if the page content changed but no tax rule changes were found "
         "(e.g., only formatting or navigation changes)",
     )
+
+
+# --- Code & Schema Generator (Phase 6D) ---
+class CodeGenerationResult(BaseModel):
+    """Structured result from LLM code generation.
+
+    Used as response_format for LiteLLM structured output.
+    """
+
+    function_name: str = Field(
+        description="Name of the generated calculation function "
+        "(must match the existing function name being updated)"
+    )
+    version: str = Field(
+        description="Version string for this algorithm (e.g., '2025.1')"
+    )
+    code_content: str = Field(
+        description="Complete Python source code of the updated function. "
+        "Must be a pure function with no imports, no side effects, no I/O."
+    )
+    description: str = Field(
+        description="Human-readable description of what changed and why"
+    )
+    referenced_regulation: str = Field(
+        description="The specific NTA regulation or page section that this code implements"
+    )
+
+
+class FieldDefinition(BaseModel):
+    """Definition of a single field in the ProfileDefinition schema."""
+
+    name: str = Field(description="Field name (snake_case)")
+    type: str = Field(
+        description="Python type string: 'int', 'float', 'bool', 'str'"
+    )
+    required: bool = Field(description="Whether this field is required")
+    description: str = Field(
+        description="Human-readable description of the field (in English)"
+    )
+    description_ja: str = Field(
+        description="Japanese description of the field for UI display"
+    )
+    default_value: str | None = Field(
+        None,
+        description="Default value as a string (e.g., '0', 'false'). None if required with no default.",
+    )
+
+
+class SchemaChangeProposal(BaseModel):
+    """Proposed changes to the ProfileDefinition schema.
+
+    Used as response_format for LiteLLM structured output.
+    """
+
+    year: int = Field(description="Tax year this schema change applies to")
+    new_fields: list[FieldDefinition] = Field(
+        description="New fields to add to the ProfileDefinition"
+    )
+    removed_fields: list[str] = Field(
+        description="Field names to remove (empty list if none)"
+    )
+    modified_fields: list[FieldDefinition] = Field(
+        default_factory=list,
+        description="Fields with updated definitions (e.g., changed type or description)",
+    )
+    change_rationale: str = Field(
+        description="Explanation of why these schema changes are needed"
+    )

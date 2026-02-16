@@ -1,0 +1,7 @@
+{
+  "year": 2024,
+  "new_fields": [],
+  "removed_fields": [],
+  "modified_fields": [],
+  "change_rationale": "The threshold update does not require any new user input fields. Existing fields are sufficient to calculate the updated deduction."
+}

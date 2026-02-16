@@ -52,6 +52,14 @@ class EvolutionRunStatus(StrEnum):
     FAILED = "FAILED"
 
 
+class ProposalStatus(StrEnum):
+    """Status of a schema change proposal."""
+
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
+
 class LawChangeType(StrEnum):
     """Types of tax law changes the parser can identify."""
 

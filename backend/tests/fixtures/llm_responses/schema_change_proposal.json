@@ -1,0 +1,16 @@
+{
+  "year": 2024,
+  "new_fields": [
+    {
+      "name": "fixed_tax_cut_eligible_count",
+      "type": "int",
+      "required": false,
+      "description": "Number of persons eligible for the 2024 fixed tax cut (taxpayer + dependents)",
+      "description_ja": "定額減税の対象人数（本人＋扶養親族）",
+      "default_value": "0"
+    }
+  ],
+  "removed_fields": [],
+  "modified_fields": [],
+  "change_rationale": "The 2024 Fixed Tax Cut requires knowing how many eligible persons are in the household to calculate the 30,000 JPY per person credit."
+}

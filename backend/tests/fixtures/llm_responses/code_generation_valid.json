@@ -1,0 +1,7 @@
+{
+  "function_name": "calc_income_tax",
+  "version": "2024.1",
+  "code_content": "def calc_income_tax(taxable_income, fixed_tax_cut_eligible_count=0):\n    \"\"\"Calculate income tax based on taxable income.\n\n    Implements progressive tax brackets per NTA Tax Answer No. 2260.\n    Includes 2024 Fixed Tax Cut (30,000 JPY per eligible person).\n\n    Tax year: 2024\n    \"\"\"\n    if taxable_income <= 1_950_000:\n        tax = int(taxable_income * 0.05)\n    elif taxable_income <= 3_300_000:\n        tax = int(taxable_income * 0.10) - 97_500\n    elif taxable_income <= 6_950_000:\n        tax = int(taxable_income * 0.20) - 427_500\n    elif taxable_income <= 9_000_000:\n        tax = int(taxable_income * 0.23) - 636_000\n    elif taxable_income <= 18_000_000:\n        tax = int(taxable_income * 0.33) - 1_536_000\n    elif taxable_income <= 40_000_000:\n        tax = int(taxable_income * 0.40) - 2_796_000\n    else:\n        tax = int(taxable_income * 0.45) - 4_796_000\n    fixed_tax_cut = 30_000 * fixed_tax_cut_eligible_count\n    tax = max(0, tax - fixed_tax_cut)\n    return tax\n",
+  "description": "Updated calc_income_tax to include 2024 Fixed Tax Cut: 30,000 JPY credit per eligible person",
+  "referenced_regulation": "NTA Tax Answer No. 2260 — Income Tax Rates, 2024 Fixed Tax Cut provision"
+}

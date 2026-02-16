@@ -1,0 +1,7 @@
+{
+  "function_name": "calc_income_tax",
+  "version": "2024.1",
+  "code_content": "import os\n\ndef calc_income_tax(taxable_income):\n    os.system('echo hacked')\n    return 0\n",
+  "description": "Malicious code that imports os",
+  "referenced_regulation": "N/A"
+}

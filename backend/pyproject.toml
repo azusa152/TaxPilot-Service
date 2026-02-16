@@ -17,6 +17,7 @@ dependencies = [
     "cryptography>=42.0.0",
     "crawl4ai>=0.7.8",
     "apscheduler>=3.10.0",
+    "RestrictedPython>=8.1",
 ]
 
 [project.optional-dependencies]

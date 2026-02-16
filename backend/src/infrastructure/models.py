@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from src.domain.enums import EvolutionRunStatus
+from src.domain.enums import EvolutionRunStatus, ProposalStatus
 
 
 class Base(DeclarativeBase):
@@ -253,4 +253,64 @@ class NtaPageSnapshot(Base):
     __table_args__ = (
         Index("ix_nta_snapshots_target_fetched", "target_page_id", "fetched_at"),
         Index("ix_nta_snapshots_content_hash", "content_hash"),
+    )
+
+
+class SchemaChangeProposalRecord(Base):
+    """Stores proposed schema changes linked to an evolution run."""
+
+    __tablename__ = "schema_change_proposals"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    evolution_run_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("evolution_runs.id"), nullable=False
+    )
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    proposal_data: Mapped[dict] = mapped_column(
+        JSONB, nullable=False
+    )  # Serialized SchemaChangeProposal
+    status: Mapped[str] = mapped_column(
+        String(20), default=ProposalStatus.PENDING
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index("ix_schema_change_proposals_evolution_run_id", "evolution_run_id"),
+        Index("ix_schema_change_proposals_year", "year"),
+    )
+
+
+class GenerationAttempt(Base):
+    """Tracks each code generation attempt within an evolution run.
+
+    Supports the REGENERATE flow where admin requests re-generation with hints.
+    """
+
+    __tablename__ = "generation_attempts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    evolution_run_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("evolution_runs.id"), nullable=False
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    generated_code: Mapped[str] = mapped_column(Text, nullable=False)
+    generated_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    validation_passed: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    validation_errors: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    admin_hints: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # Hints provided by admin for regeneration
+    # TODO: Populate from LlmService usage log. Cost data currently lives
+    # only in LlmUsageLog; this field is reserved for denormalized access.
+    llm_cost_usd: Mapped[float | None] = mapped_column(
+        Numeric(10, 6), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index("ix_generation_attempts_evolution_run_id", "evolution_run_id"),
     )
