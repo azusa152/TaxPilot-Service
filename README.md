@@ -141,7 +141,7 @@ TaxPilot includes a **self-evolving pipeline** that monitors Japanese tax law ch
 |-------|-----------|-------------|
 | 6-Pre | **Bootstrap & Verification** | Cold-start: seeds the AlgorithmRegistry with existing formulas, crawls baseline NTA pages, and uses LLM to verify formula accuracy |
 | 6A | **LLM Gateway** | Unified LLM access via LiteLLM (OpenAI, Gemini, Claude). API tokens encrypted at rest with Fernet. Budget tracking and structured output via Pydantic |
-| 6B | **NTA Crawler** | Async crawler (Crawl4AI) monitors National Tax Agency pages for content changes. Stores parsed Markdown snapshots with content hashing for change detection |
+| 6B | **Three-Layer Tax Crawler** | Multi-source monitoring: (1) NTA Tax Answer pages (daily) via Crawl4AI, (2) MOF Tax Reform PDFs (weekly) via httpx + MarkItDown, (3) e-Gov Law API (monthly) for Income Tax Act and Local Tax Act. All layers share the same NtaPageSnapshot table with source_type discriminator |
 | 6C | **Regulation Parser** | LLM-powered analysis of NTA content diffs to identify specific law changes (thresholds, rates, brackets, new deductions) |
 | 6D | **Code & Schema Generator** | Generates updated Python calculation functions and ProfileDefinition schema proposals from parsed law changes. Code validated via RestrictedPython sandbox |
 | 6E | **Pipeline Orchestration & Admin Review** | End-to-end workflow from detection to activation. 4-option admin review: Accept, Modify, Regenerate (with hints), or Skip. Rollback support and audit logging |
@@ -158,8 +158,13 @@ Design documents: [docs/design/evolution-loop/](docs/design/evolution-loop/)
 | `LLM_API_TOKEN` | *(empty)* | LLM API key (encrypted at rest) |
 | `LLM_ENCRYPTION_KEY` | *(empty)* | Fernet key for encrypting secrets |
 | `LLM_MONTHLY_BUDGET_USD` | `50.00` | Monthly LLM spending limit |
-| `NTA_CRAWL_INTERVAL_HOURS` | `24` | Hours between NTA crawl cycles |
-| `NTA_CRAWL_RATE_LIMIT_SECONDS` | `2` | Delay between page fetches |
+| `NTA_CRAWL_INTERVAL_HOURS` | `24` | Hours between NTA Tax Answer crawl cycles (Layer 1) |
+| `MOF_CRAWL_INTERVAL_HOURS` | `168` | Hours between MOF Tax Reform crawl cycles (Layer 2, weekly) |
+| `EGOV_CRAWL_INTERVAL_HOURS` | `720` | Hours between e-Gov Law API crawl cycles (Layer 3, monthly) |
+| `MOF_REFORM_URL` | *(MOF outline)* | MOF Tax Reform outline page URL |
+| `EGOV_API_BASE_URL` | `https://laws.e-gov.go.jp/api/2` | e-Gov Law API v2 base URL |
+| `EGOV_INCOME_TAX_LAW_ID` | `340AC0000000033` | e-Gov Law ID for Income Tax Act (所得税法) |
+| `EGOV_LOCAL_TAX_LAW_ID` | `325AC0000000226` | e-Gov Law ID for Local Tax Act (地方税法) |
 
 SMTP notifications are configured via the admin dashboard (`PUT /admin/notifications/config`) or the Streamlit UI. SMTP passwords are encrypted using the same Fernet key as LLM tokens.
 

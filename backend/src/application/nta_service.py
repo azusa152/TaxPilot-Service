@@ -3,10 +3,10 @@
 Orchestrates crawl triggers, snapshot queries, target page CRUD, and health status.
 """
 
-from sqlalchemy import func as sqla_func, select
+from sqlalchemy import func as sqla_func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import settings
 from src.domain.enums import CrawlerRunTrigger
 from src.domain.exceptions import NotFoundError
 from src.domain.schemas import (
@@ -16,27 +16,60 @@ from src.domain.schemas import (
     NtaSnapshotDetail,
     NtaTargetPageConfig,
 )
+from src.infrastructure.egov_law_client import EgovLawClient
 from src.infrastructure.models import NtaCrawlerRun, NtaPageSnapshot, NtaTargetPage
+from src.infrastructure.mof_reform_monitor import MofReformMonitor
 from src.infrastructure.nta_monitor import NtaMonitor
 from src.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 
-async def trigger_crawl(
+async def trigger_crawl(db: AsyncSession, trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL) -> list[NtaPageChange]:
+    """Trigger NTA crawler run and return detected changes."""
+    monitor = NtaMonitor(db)
+    return await monitor.check_for_changes(trigger=trigger)
+
+
+async def trigger_mof_crawl(
     db: AsyncSession, trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL
 ) -> list[NtaPageChange]:
-    """Trigger a crawler run and return detected changes."""
-    monitor = NtaMonitor(db, rate_limit_seconds=settings.nta_crawl_rate_limit_seconds)
+    """Trigger MOF Tax Reform crawler run and return detected changes."""
+    monitor = MofReformMonitor(db)
     return await monitor.check_for_changes(trigger=trigger)
+
+
+async def trigger_egov_crawl(
+    db: AsyncSession, trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL
+) -> list[NtaPageChange]:
+    """Trigger e-Gov Law API crawler run and return detected changes."""
+    client = EgovLawClient(db)
+    return await client.check_for_changes(trigger=trigger)
+
+
+async def trigger_all_crawls(
+    db: AsyncSession, trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL
+) -> dict[str, list[NtaPageChange]]:
+    """Trigger all three crawler types and return detected changes.
+
+    Returns:
+        Dict with keys: 'nta', 'mof', 'egov', each containing list of changes.
+    """
+    nta_changes = await trigger_crawl(db, trigger)
+    mof_changes = await trigger_mof_crawl(db, trigger)
+    egov_changes = await trigger_egov_crawl(db, trigger)
+
+    return {
+        "nta": nta_changes,
+        "mof": mof_changes,
+        "egov": egov_changes,
+    }
 
 
 async def get_health_status(db: AsyncSession) -> CrawlerHealthStatus:
     """Get overall crawler health status."""
     # Last run
-    last_run_result = await db.execute(
-        select(NtaCrawlerRun).order_by(NtaCrawlerRun.started_at.desc()).limit(1)
-    )
+    last_run_result = await db.execute(select(NtaCrawlerRun).order_by(NtaCrawlerRun.started_at.desc()).limit(1))
     last_run = last_run_result.scalar_one_or_none()
 
     # Count target pages
@@ -107,6 +140,7 @@ async def list_snapshots(
                 id=snapshot.id,
                 target_page_name=target_page.name,
                 target_page_url=target_page.url,
+                source_type=target_page.source_type,
                 content_hash=snapshot.content_hash,
                 raw_markdown=snapshot.raw_markdown,
                 fit_markdown=snapshot.fit_markdown,
@@ -153,6 +187,7 @@ async def get_snapshot_detail(db: AsyncSession, snapshot_id: int) -> NtaSnapshot
         id=snapshot.id,
         target_page_name=target_page.name,
         target_page_url=target_page.url,
+        source_type=target_page.source_type,
         content_hash=snapshot.content_hash,
         raw_markdown=snapshot.raw_markdown,
         fit_markdown=snapshot.fit_markdown,
@@ -167,25 +202,19 @@ async def get_snapshot_detail(db: AsyncSession, snapshot_id: int) -> NtaSnapshot
 async def get_snapshot_markdown(db: AsyncSession, snapshot_id: int) -> str:
     """Get just the fit_markdown for a snapshot (for copy/paste)."""
     result = await db.execute(
-        select(NtaPageSnapshot.id, NtaPageSnapshot.fit_markdown).where(
-            NtaPageSnapshot.id == snapshot_id
-        )
+        select(NtaPageSnapshot.id, NtaPageSnapshot.fit_markdown).where(NtaPageSnapshot.id == snapshot_id)
     )
     row = result.one_or_none()
     if row is None:
         raise NotFoundError(f"Snapshot {snapshot_id} not found")
     if row.fit_markdown is None:
-        raise NotFoundError(
-            f"Snapshot {snapshot_id} has no markdown content (status may be FAILED)"
-        )
+        raise NotFoundError(f"Snapshot {snapshot_id} has no markdown content (status may be FAILED)")
     return row.fit_markdown
 
 
 async def upsert_target_page(db: AsyncSession, config: NtaTargetPageConfig) -> NtaTargetPage:
     """Add or update a target NTA page."""
-    result = await db.execute(
-        select(NtaTargetPage).where(NtaTargetPage.name == config.name)
-    )
+    result = await db.execute(select(NtaTargetPage).where(NtaTargetPage.name == config.name))
     existing = result.scalar_one_or_none()
 
     if existing:
@@ -193,6 +222,7 @@ async def upsert_target_page(db: AsyncSession, config: NtaTargetPageConfig) -> N
         existing.description = config.description
         existing.is_active = config.is_active
         existing.check_interval_hours = config.check_interval_hours
+        existing.source_type = config.source_type
         await db.flush()
         return existing
 
@@ -202,6 +232,7 @@ async def upsert_target_page(db: AsyncSession, config: NtaTargetPageConfig) -> N
         description=config.description,
         is_active=config.is_active,
         check_interval_hours=config.check_interval_hours,
+        source_type=config.source_type,
     )
     db.add(page)
     await db.flush()
@@ -216,9 +247,7 @@ async def list_target_pages(db: AsyncSession) -> list[NtaTargetPage]:
 
 async def list_crawler_runs(db: AsyncSession, limit: int = 20) -> list[CrawlerRunSummary]:
     """List recent crawler runs."""
-    result = await db.execute(
-        select(NtaCrawlerRun).order_by(NtaCrawlerRun.started_at.desc()).limit(limit)
-    )
+    result = await db.execute(select(NtaCrawlerRun).order_by(NtaCrawlerRun.started_at.desc()).limit(limit))
     runs = result.scalars().all()
     return [
         CrawlerRunSummary(

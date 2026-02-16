@@ -213,6 +213,9 @@ class NtaTargetPage(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     check_interval_hours: Mapped[int] = mapped_column(Integer, default=24)
+    source_type: Mapped[str] = mapped_column(
+        String(30), default="NTA_TAX_ANSWER", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     snapshots: Mapped[list["NtaPageSnapshot"]] = relationship(

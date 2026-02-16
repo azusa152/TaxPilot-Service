@@ -144,9 +144,11 @@ elif page == "LLM Configuration":
         "anthropic": ["anthropic/claude-3-5-sonnet-20241022", "anthropic/claude-3-haiku-20240307"],
     }
 
+    # Provider selectbox outside form to trigger reactive reruns
+    provider = st.selectbox("Provider", ["openai", "gemini", "anthropic"])
+    suggestions = MODEL_SUGGESTIONS.get(provider, [])
+
     with st.form("llm_config"):
-        provider = st.selectbox("Provider", ["openai", "gemini", "anthropic"])
-        suggestions = MODEL_SUGGESTIONS.get(provider, [])
         model_name = st.selectbox("Model", suggestions) if suggestions else st.text_input("Model String")
         api_token = st.text_input("API Token", type="password")
         budget = st.number_input("Monthly Budget (USD)", min_value=1.0, max_value=10000.0, value=50.0, step=10.0)
@@ -210,64 +212,167 @@ elif page == "LLM Configuration":
 
 
 elif page == "Crawler Monitor":
-    st.header("NTA Crawler Monitor")
+    st.header("Three-Layer Crawler Monitor")
 
-    # --- 1. Health Overview ---
-    st.subheader("Health Overview")
-    try:
-        health = fetch_json("/admin/nta/health")
-        status = health["status"]
-        status_color = {"healthy": "green", "degraded": "orange", "error": "red"}.get(status, "gray")
-        status_emoji = {"healthy": "OK", "degraded": "WARN", "error": "ERR"}.get(status, "?")
+    # --- Layer Tabs ---
+    layer_tab = st.tabs(["Layer 1: NTA Tax Answer", "Layer 2: MOF Tax Reform", "Layer 3: e-Gov Law", "All Layers"])
 
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Status", status_emoji)
-        col2.metric("Active Pages", f"{health['active_target_pages']} / {health['total_target_pages']}")
+    # --- 1. Layer 1: NTA Tax Answer ---
+    with layer_tab[0]:
+        st.subheader("NTA Tax Answer Crawler")
 
-        if health["last_run"]:
-            last = health["last_run"]
-            col3.metric(
-                "Last Run",
-                f"{last['pages_checked']} checked, {last['pages_changed']} changed",
-            )
-            st.text(f"Last run: {last['started_at']} ({last['trigger']})")
-            if last["pages_failed"] > 0:
-                st.warning(f"{last['pages_failed']} page(s) failed in last run")
-        else:
-            col3.metric("Last Run", "Never")
-            st.info("No crawl runs yet. Click 'Run Now' to start.")
+        # Health Overview
+        try:
+            health = fetch_json("/admin/nta/health")
+            status = health["status"]
+            status_emoji = {"healthy": "✅ OK", "degraded": "⚠️ WARN", "error": "❌ ERR"}.get(status, "?")
 
-    except Exception as e:
-        st.error(f"Failed to fetch crawler health: {e}")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Status", status_emoji)
+            col2.metric("Active Pages", f"{health['active_target_pages']} / {health['total_target_pages']}")
 
-    # Run Now button
-    if st.button("Run Now"):
-        with st.spinner("Crawling NTA pages..."):
-            try:
-                changes = post_json("/admin/nta/check-now")
-                if changes:
-                    st.success(f"Crawl complete: {len(changes)} change(s) detected!")
-                    for change in changes:
-                        st.write(f"- **{change['page_name']}**: hash changed to `{change['new_hash'][:12]}...`")
-                else:
-                    st.success("Crawl complete: no changes detected.")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Crawl failed: {e}")
+            if health["last_run"]:
+                last = health["last_run"]
+                col3.metric(
+                    "Last Run",
+                    f"{last['pages_checked']} checked, {last['pages_changed']} changed",
+                )
+                st.text(f"Last run: {last['started_at']} ({last['trigger']})")
+                if last["pages_failed"] > 0:
+                    st.warning(f"{last['pages_failed']} page(s) failed in last run")
+            else:
+                col3.metric("Last Run", "Never")
+                st.info("No crawl runs yet. Click 'Run Now' to start.")
 
-    # --- 2. Target Pages Management ---
+        except Exception as e:
+            st.error(f"Failed to fetch crawler health: {e}")
+
+        # Run Now button
+        if st.button("Run NTA Crawler Now", key="nta_run"):
+            with st.spinner("Crawling NTA pages..."):
+                try:
+                    changes = post_json("/admin/nta/check-now")
+                    if changes:
+                        st.success(f"Crawl complete: {len(changes)} change(s) detected!")
+                        for change in changes:
+                            st.write(f"- **{change['page_name']}**: hash changed to `{change['new_hash'][:12]}...`")
+                    else:
+                        st.success("Crawl complete: no changes detected.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Crawl failed: {e}")
+
+    # --- 2. Layer 2: MOF Tax Reform ---
+    with layer_tab[1]:
+        st.subheader("MOF Tax Reform Monitor")
+        st.info("Monitors Ministry of Finance Tax Reform PDF documents (weekly schedule)")
+
+        if st.button("Run MOF Crawler Now", key="mof_run"):
+            with st.spinner("Checking MOF Tax Reform page..."):
+                try:
+                    changes = post_json("/admin/nta/check-mof")
+                    if changes:
+                        st.success(f"MOF crawl complete: {len(changes)} change(s) detected!")
+                        for change in changes:
+                            st.write(f"- **{change['page_name']}**: `{change['new_hash'][:12]}...`")
+                    else:
+                        st.success("MOF crawl complete: no changes detected.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"MOF crawl failed: {e}")
+
+    # --- 3. Layer 3: e-Gov Law ---
+    with layer_tab[2]:
+        st.subheader("e-Gov Law API Client")
+        st.info("Monitors Income Tax Act and Local Tax Act via e-Gov API (monthly schedule)")
+
+        if st.button("Run e-Gov Crawler Now", key="egov_run"):
+            with st.spinner("Checking e-Gov Law API..."):
+                try:
+                    changes = post_json("/admin/nta/check-egov")
+                    if changes:
+                        st.success(f"e-Gov crawl complete: {len(changes)} change(s) detected!")
+                        for change in changes:
+                            st.write(f"- **{change['page_name']}**: `{change['new_hash'][:12]}...`")
+                    else:
+                        st.success("e-Gov crawl complete: no changes detected.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"e-Gov crawl failed: {e}")
+
+    # --- 4. All Layers ---
+    with layer_tab[3]:
+        st.subheader("Run All Crawlers")
+        st.info("Trigger all three layers sequentially: NTA → MOF → e-Gov")
+
+        if st.button("Run All Crawlers Now", key="all_run"):
+            with st.spinner("Running all three crawler layers..."):
+                try:
+                    result = post_json("/admin/nta/check-all")
+                    st.success(f"All crawlers complete: {result['total_changes']} total change(s) detected!")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("NTA Changes", len(result['nta_changes']))
+                    col2.metric("MOF Changes", len(result['mof_changes']))
+                    col3.metric("e-Gov Changes", len(result['egov_changes']))
+                    
+                    if result['nta_changes']:
+                        st.write("**NTA Changes:**")
+                        for change in result['nta_changes']:
+                            st.write(f"- {change['page_name']}")
+                    if result['mof_changes']:
+                        st.write("**MOF Changes:**")
+                        for change in result['mof_changes']:
+                            st.write(f"- {change['page_name']}")
+                    if result['egov_changes']:
+                        st.write("**e-Gov Changes:**")
+                        for change in result['egov_changes']:
+                            st.write(f"- {change['page_name']}")
+                    
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Crawl failed: {e}")
+
+    # --- Target Pages Management (shared) ---
     st.divider()
-    st.subheader("Target Pages")
+    st.subheader("Target Pages (All Layers)")
 
     try:
         targets = fetch_json("/admin/nta/targets")
         if targets:
-            for target in targets:
-                status_label = "Active" if target["is_active"] else "Disabled"
-                with st.expander(f"{target['name']} ({status_label})"):
-                    st.text(f"URL: {target['url']}")
-                    st.text(f"Description: {target.get('description', 'N/A')}")
-                    st.text(f"Check interval: {target['check_interval_hours']}h")
+            # Group by source_type
+            nta_targets = [t for t in targets if t.get("source_type") == "NTA_TAX_ANSWER"]
+            mof_targets = [t for t in targets if t.get("source_type") == "MOF_TAX_REFORM"]
+            egov_targets = [t for t in targets if t.get("source_type") == "EGOV_LAW"]
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.write(f"**Layer 1 (NTA): {len(nta_targets)} pages**")
+                for target in nta_targets:
+                    status_label = "✅" if target["is_active"] else "❌"
+                    with st.expander(f"{status_label} {target['name']}"):
+                        st.text(f"URL: {target['url']}")
+                        st.text(f"Description: {target.get('description', 'N/A')}")
+                        st.text(f"Check interval: {target['check_interval_hours']}h")
+            
+            with col2:
+                st.write(f"**Layer 2 (MOF): {len(mof_targets)} pages**")
+                for target in mof_targets:
+                    status_label = "✅" if target["is_active"] else "❌"
+                    with st.expander(f"{status_label} {target['name']}"):
+                        st.text(f"URL: {target['url']}")
+                        st.text(f"Description: {target.get('description', 'N/A')}")
+                        st.text(f"Check interval: {target['check_interval_hours']}h")
+            
+            with col3:
+                st.write(f"**Layer 3 (e-Gov): {len(egov_targets)} pages**")
+                for target in egov_targets:
+                    status_label = "✅" if target["is_active"] else "❌"
+                    with st.expander(f"{status_label} {target['name']}"):
+                        st.text(f"URL: {target['url']}")
+                        st.text(f"Description: {target.get('description', 'N/A')}")
+                        st.text(f"Check interval: {target['check_interval_hours']}h")
         else:
             st.info("No target pages configured. Add one below.")
     except Exception as e:
@@ -280,6 +385,11 @@ elif page == "Crawler Monitor":
         name = st.text_input("Page Name", placeholder="income_tax_rates")
         url = st.text_input("URL", placeholder="https://www.nta.go.jp/...")
         description = st.text_input("Description", placeholder="Income tax rate table")
+        source_type = st.selectbox(
+            "Source Type",
+            options=["NTA_TAX_ANSWER", "MOF_TAX_REFORM", "EGOV_LAW"],
+            help="Layer 1: NTA Tax Answer | Layer 2: MOF Tax Reform | Layer 3: e-Gov Law API",
+        )
         check_interval = st.number_input("Check Interval (hours)", min_value=1, max_value=720, value=24)
         is_active = st.checkbox("Active", value=True)
 
@@ -292,6 +402,7 @@ elif page == "Crawler Monitor":
                             "name": name,
                             "url": url,
                             "description": description or None,
+                            "source_type": source_type,
                             "check_interval_hours": check_interval,
                             "is_active": is_active,
                         },

@@ -3,7 +3,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.enums import CrawlerRunTrigger
 from src.application.nta_service import (
     get_health_status,
     get_snapshot_detail,
@@ -11,9 +10,13 @@ from src.application.nta_service import (
     list_crawler_runs,
     list_snapshots,
     list_target_pages,
+    trigger_all_crawls,
     trigger_crawl,
+    trigger_egov_crawl,
+    trigger_mof_crawl,
     upsert_target_page,
 )
+from src.domain.enums import CrawlerRunTrigger
 from src.domain.schemas import (
     CrawlerHealthStatus,
     CrawlerRunSummary,
@@ -29,10 +32,46 @@ router = APIRouter(prefix="/admin/nta", tags=["Admin - NTA Crawler"])
 @router.post(
     "/check-now",
     response_model=list[NtaPageChange],
-    summary="Trigger a manual crawler run",
+    summary="Trigger a manual NTA crawler run",
 )
 async def check_now(db: AsyncSession = Depends(get_db)):
+    """Trigger NTA Tax Answer crawler (Layer 1)."""
     return await trigger_crawl(db, trigger=CrawlerRunTrigger.MANUAL)
+
+
+@router.post(
+    "/check-mof",
+    response_model=list[NtaPageChange],
+    summary="Trigger a manual MOF Tax Reform crawler run",
+)
+async def check_mof(db: AsyncSession = Depends(get_db)):
+    """Trigger MOF Tax Reform monitor (Layer 2)."""
+    return await trigger_mof_crawl(db, trigger=CrawlerRunTrigger.MANUAL)
+
+
+@router.post(
+    "/check-egov",
+    response_model=list[NtaPageChange],
+    summary="Trigger a manual e-Gov Law API crawler run",
+)
+async def check_egov(db: AsyncSession = Depends(get_db)):
+    """Trigger e-Gov Law API client (Layer 3)."""
+    return await trigger_egov_crawl(db, trigger=CrawlerRunTrigger.MANUAL)
+
+
+@router.post(
+    "/check-all",
+    summary="Trigger all three crawler types (NTA, MOF, e-Gov)",
+)
+async def check_all(db: AsyncSession = Depends(get_db)):
+    """Trigger all three crawler layers sequentially."""
+    results = await trigger_all_crawls(db, trigger=CrawlerRunTrigger.MANUAL)
+    return {
+        "nta_changes": results["nta"],
+        "mof_changes": results["mof"],
+        "egov_changes": results["egov"],
+        "total_changes": len(results["nta"]) + len(results["mof"]) + len(results["egov"]),
+    }
 
 
 @router.get(

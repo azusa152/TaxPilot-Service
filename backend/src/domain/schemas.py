@@ -174,6 +174,10 @@ class NtaTargetPageConfig(BaseModel):
     description: str | None = Field(None, description="Description of what this page contains")
     is_active: bool = Field(default=True, description="Whether to actively monitor this page")
     check_interval_hours: int = Field(default=24, description="How often to check this page (in hours)")
+    source_type: str = Field(
+        default="NTA_TAX_ANSWER",
+        description="Source type: NTA_TAX_ANSWER, MOF_TAX_REFORM, or EGOV_LAW"
+    )
 
 
 class NtaPageChange(BaseModel):
@@ -192,6 +196,7 @@ class NtaSnapshotDetail(BaseModel):
     id: int = Field(description="Snapshot ID")
     target_page_name: str = Field(description="Name of the monitored page")
     target_page_url: str = Field(description="URL of the monitored page")
+    source_type: str = Field(description="Source type: NTA_TAX_ANSWER, MOF_TAX_REFORM, or EGOV_LAW")
     content_hash: str = Field(description="SHA-256 hash of fit_markdown")
     raw_markdown: str | None = Field(description="Full page as markdown")
     fit_markdown: str | None = Field(description="LLM-optimized markdown (boilerplate removed)")

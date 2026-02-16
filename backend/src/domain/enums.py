@@ -99,3 +99,11 @@ class NotificationEvent(StrEnum):
     FORMULA_REGENERATING = "FORMULA_REGENERATING"
     RUN_FAILED = "RUN_FAILED"
     DEFERRED_REMINDER = "DEFERRED_REMINDER"
+
+
+class CrawlerSourceType(StrEnum):
+    """Source types for the three-layer tax law monitoring system."""
+
+    NTA_TAX_ANSWER = "NTA_TAX_ANSWER"
+    MOF_TAX_REFORM = "MOF_TAX_REFORM"
+    EGOV_LAW = "EGOV_LAW"

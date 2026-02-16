@@ -10,15 +10,16 @@ dependencies = [
     "alembic>=1.13.0",
     "pydantic>=2.7.0",
     "pydantic-settings>=2.3.0",
-    "markitdown>=0.1.0",
+    "markitdown[pdf]>=0.1.0",
     "python-multipart>=0.0.9",
     "httpx>=0.27.0",
     "litellm>=1.81.0",
     "cryptography>=42.0.0",
-    "crawl4ai>=0.7.8",
+    "crawl4ai>=0.8.0",
     "apscheduler>=3.10.0",
     "RestrictedPython>=8.1",
     "aiosmtplib>=3.0.0",
+    "beautifulsoup4>=4.12.0",
 ]
 
 [project.optional-dependencies]

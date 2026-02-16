@@ -64,48 +64,87 @@ FUNCTIONS_TO_REGISTER: list[str] = [
     "calc_furusato_limit",
 ]
 
-# NTA target pages to seed: (name, url, description)
-NTA_TARGET_PAGES: list[tuple[str, str, str]] = [
+# NTA target pages to seed: (name, url, description, source_type)
+NTA_TARGET_PAGES: list[tuple[str, str, str, str]] = [
     (
         "income_tax_rates",
         "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/2260.htm",
         "Income tax rates and basic deduction (所得税の税率, 基礎控除)",
+        "NTA_TAX_ANSWER",
     ),
     (
         "salary_deduction",
         "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1410.htm",
         "Salary income deduction (給与所得控除)",
+        "NTA_TAX_ANSWER",
     ),
     (
         "spouse_deduction",
         "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1191.htm",
         "Spouse deduction (配偶者控除)",
+        "NTA_TAX_ANSWER",
     ),
     (
         "dependents_deduction",
         "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1180.htm",
         "Dependents deduction (扶養控除)",
+        "NTA_TAX_ANSWER",
     ),
     (
         "social_insurance",
         "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1130.htm",
         "Social insurance deduction (社会保険料控除)",
+        "NTA_TAX_ANSWER",
     ),
     (
         "life_insurance",
         "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1140.htm",
         "Life insurance deduction (生命保険料控除)",
+        "NTA_TAX_ANSWER",
     ),
     (
         "ideco_deduction",
         "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1135.htm",
         "iDeCo / small enterprise mutual aid (小規模企業共済等掛金控除)",
+        "NTA_TAX_ANSWER",
     ),
     (
         "furusato_nouzei",
-        "https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/czaisei_seido/"
-        "furusato/mechanism/deduction.html",
+        "https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/czaisei_seido/furusato/mechanism/deduction.html",
         "Furusato Nouzei deduction mechanism (ふるさと納税)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "basic_deduction",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1199.htm",
+        "Basic deduction details (基礎控除)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "furusato_nta",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1155.htm",
+        "Furusato Nouzei on NTA (ふるさと納税 - 国税庁)",
+        "NTA_TAX_ANSWER",
+    ),
+    # MOF Tax Reform (Layer 2)
+    (
+        "mof_tax_reform_outline",
+        "https://www.mof.go.jp/tax_policy/tax_reform/outline/index.html",
+        "MOF Tax Reform outline page (財務省 税制改正)",
+        "MOF_TAX_REFORM",
+    ),
+    # e-Gov Laws (Layer 3)
+    (
+        "egov_income_tax_law",
+        "egov://340AC0000000033",
+        "Income Tax Act from e-Gov (所得税法)",
+        "EGOV_LAW",
+    ),
+    (
+        "egov_local_tax_law",
+        "egov://325AC0000000226",
+        "Local Tax Act from e-Gov (地方税法)",
+        "EGOV_LAW",
     ),
 ]
 
@@ -147,15 +186,11 @@ class BootstrapRunner:
             logger.info("Bootstrap Step 3: LLM verification")
             summary["step3_verify"] = await self._step3_verify()
         else:
-            logger.info(
-                "Bootstrap Step 3: Skipped (no LLM configured or skip requested)"
-            )
+            logger.info("Bootstrap Step 3: Skipped (no LLM configured or skip requested)")
             summary["step3_verify"] = "skipped"
 
         # Step 4 is a code change (migrate tax_service.py) — done in Task 6Pre.7
-        summary["step4_migrate"] = (
-            "Manual: migrate tax_service.py to use AlgorithmLoader"
-        )
+        summary["step4_migrate"] = "Manual: migrate tax_service.py to use AlgorithmLoader"
 
         await self.db.commit()
         logger.info(f"Bootstrap complete: {summary}")
@@ -165,14 +200,16 @@ class BootstrapRunner:
         """Seed NTA target pages and perform baseline crawl."""
         pages_seeded = 0
 
-        for name, url, description in NTA_TARGET_PAGES:
-            result = await self.db.execute(
-                select(NtaTargetPage).where(NtaTargetPage.name == name)
-            )
+        for name, url, description, source_type in NTA_TARGET_PAGES:
+            result = await self.db.execute(select(NtaTargetPage).where(NtaTargetPage.name == name))
             existing = result.scalar_one_or_none()
             if existing is None:
                 page = NtaTargetPage(
-                    name=name, url=url, description=description, is_active=True
+                    name=name,
+                    url=url,
+                    description=description,
+                    is_active=True,
+                    source_type=source_type,
                 )
                 self.db.add(page)
                 pages_seeded += 1
@@ -269,9 +306,7 @@ class BootstrapRunner:
             )
             snapshot = result.scalar_one_or_none()
             if not snapshot or not snapshot.fit_markdown:
-                logger.warning(
-                    f"No snapshot available for {page_name}, skipping verification"
-                )
+                logger.warning(f"No snapshot available for {page_name}, skipping verification")
                 continue
 
             for func_name in func_names:

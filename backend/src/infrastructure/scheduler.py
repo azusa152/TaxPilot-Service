@@ -1,6 +1,7 @@
 """Periodic crawler scheduling using APScheduler.
 
-Runs the NTA crawler at configurable intervals to detect regulation changes.
+Runs the NTA crawler, MOF Tax Reform monitor, and e-Gov Law API client
+at configurable intervals to detect regulation changes.
 Also runs weekly deferred reminder notifications.
 """
 
@@ -11,7 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from src.application.notification_manager import NotificationManager
 from src.config import settings
 from src.domain.enums import CrawlerRunTrigger, EvolutionRunStatus
+from src.infrastructure.egov_law_client import EgovLawClient
 from src.infrastructure.models import EvolutionRun
+from src.infrastructure.mof_reform_monitor import MofReformMonitor
 from src.infrastructure.nta_monitor import NtaMonitor
 from src.logging_config import get_logger
 
@@ -24,23 +27,63 @@ _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
 async def scheduled_crawl() -> None:
-    """Periodic crawler job triggered by APScheduler."""
+    """Periodic NTA crawler job triggered by APScheduler."""
     if _session_factory is None:
         logger.error("Scheduler session factory not initialized")
         return
 
     async with _session_factory() as db:
         try:
-            monitor = NtaMonitor(db, rate_limit_seconds=settings.nta_crawl_rate_limit_seconds)
+            monitor = NtaMonitor(db)
             changes = await monitor.check_for_changes(trigger=CrawlerRunTrigger.SCHEDULED)
             await db.commit()
             if changes:
-                logger.info(f"Scheduled crawl detected {len(changes)} change(s)")
+                logger.info(f"Scheduled NTA crawl detected {len(changes)} change(s)")
             else:
-                logger.info("Scheduled crawl: no changes detected")
+                logger.info("Scheduled NTA crawl: no changes detected")
         except Exception:
             await db.rollback()
-            logger.exception("Scheduled crawl failed")
+            logger.exception("Scheduled NTA crawl failed")
+
+
+async def scheduled_mof_crawl() -> None:
+    """Periodic MOF Tax Reform crawler job triggered by APScheduler."""
+    if _session_factory is None:
+        logger.error("Scheduler session factory not initialized")
+        return
+
+    async with _session_factory() as db:
+        try:
+            monitor = MofReformMonitor(db)
+            changes = await monitor.check_for_changes(trigger=CrawlerRunTrigger.SCHEDULED)
+            await db.commit()
+            if changes:
+                logger.info(f"Scheduled MOF crawl detected {len(changes)} change(s)")
+            else:
+                logger.info("Scheduled MOF crawl: no changes detected")
+        except Exception:
+            await db.rollback()
+            logger.exception("Scheduled MOF crawl failed")
+
+
+async def scheduled_egov_crawl() -> None:
+    """Periodic e-Gov Law API crawler job triggered by APScheduler."""
+    if _session_factory is None:
+        logger.error("Scheduler session factory not initialized")
+        return
+
+    async with _session_factory() as db:
+        try:
+            client = EgovLawClient(db)
+            changes = await client.check_for_changes(trigger=CrawlerRunTrigger.SCHEDULED)
+            await db.commit()
+            if changes:
+                logger.info(f"Scheduled e-Gov crawl detected {len(changes)} change(s)")
+            else:
+                logger.info("Scheduled e-Gov crawl: no changes detected")
+        except Exception:
+            await db.rollback()
+            logger.exception("Scheduled e-Gov crawl failed")
 
 
 async def scheduled_deferred_reminder() -> None:
@@ -114,16 +157,38 @@ def start_scheduler(session_factory: async_sessionmaker[AsyncSession]) -> None:
     global _session_factory
     _session_factory = session_factory
 
-    # NTA crawler job
-    interval_hours = settings.nta_crawl_interval_hours
+    # NTA crawler job (daily)
+    nta_interval_hours = settings.nta_crawl_interval_hours
     scheduler.add_job(
         scheduled_crawl,
         "interval",
-        hours=interval_hours,
+        hours=nta_interval_hours,
         id="nta_crawler",
         replace_existing=True,
     )
-    logger.info(f"NTA crawler scheduler started: every {interval_hours} hour(s)")
+    logger.info(f"NTA crawler scheduler started: every {nta_interval_hours} hour(s)")
+
+    # MOF Tax Reform crawler job (weekly)
+    mof_interval_hours = settings.mof_crawl_interval_hours
+    scheduler.add_job(
+        scheduled_mof_crawl,
+        "interval",
+        hours=mof_interval_hours,
+        id="mof_crawler",
+        replace_existing=True,
+    )
+    logger.info(f"MOF Tax Reform crawler scheduler started: every {mof_interval_hours} hour(s)")
+
+    # e-Gov Law API crawler job (monthly)
+    egov_interval_hours = settings.egov_crawl_interval_hours
+    scheduler.add_job(
+        scheduled_egov_crawl,
+        "interval",
+        hours=egov_interval_hours,
+        id="egov_crawler",
+        replace_existing=True,
+    )
+    logger.info(f"e-Gov Law API crawler scheduler started: every {egov_interval_hours} hour(s)")
 
     # Deferred reminder job (weekly on Monday at 9:00 AM)
     scheduler.add_job(
