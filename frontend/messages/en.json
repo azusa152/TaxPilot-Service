@@ -1,0 +1,29 @@
+{
+  "common": {
+    "appName": "TaxPilot",
+    "appDescription": "Smart tax filing assistant for Japan",
+    "welcome": "Welcome to TaxPilot",
+    "welcomeSubtitle": "Your intelligent assistant for Japanese tax filing. Manage income, build your tax profile, and calculate your obligations — all in one place.",
+    "getStarted": "Get Started",
+    "notFound": "Page not found",
+    "nav": {
+      "home": "Home",
+      "income": "Income",
+      "profile": "Tax Profile",
+      "upload": "Upload Documents",
+      "calculate": "Calculate Tax"
+    },
+    "footer": {
+      "status": "API Status",
+      "healthy": "Connected",
+      "degraded": "Degraded",
+      "offline": "Offline"
+    },
+    "locale": {
+      "ja": "Japanese",
+      "en": "English",
+      "zh-TW": "Traditional Chinese",
+      "switchLocale": "Language"
+    }
+  }
+}

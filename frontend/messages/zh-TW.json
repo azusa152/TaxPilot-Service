@@ -1,0 +1,29 @@
+{
+  "common": {
+    "appName": "TaxPilot",
+    "appDescription": "日本報稅智慧助手",
+    "welcome": "歡迎使用 TaxPilot",
+    "welcomeSubtitle": "您的日本報稅智慧助手。在一個地方管理收入、建立稅務資料、計算稅額。",
+    "getStarted": "開始使用",
+    "notFound": "找不到頁面",
+    "nav": {
+      "home": "首頁",
+      "income": "收入",
+      "profile": "稅務資料",
+      "upload": "上傳文件",
+      "calculate": "稅額計算"
+    },
+    "footer": {
+      "status": "API 狀態",
+      "healthy": "已連線",
+      "degraded": "部分異常",
+      "offline": "離線"
+    },
+    "locale": {
+      "ja": "日本語",
+      "en": "English",
+      "zh-TW": "繁體中文",
+      "switchLocale": "語言"
+    }
+  }
+}

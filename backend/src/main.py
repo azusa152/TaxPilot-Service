@@ -1,4 +1,7 @@
+import os
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.error_handlers import register_error_handlers
 from src.api.health_routes import router as health_router
@@ -17,6 +20,17 @@ def create_app() -> FastAPI:
         title="TaxPilot Service",
         description="Self-Evolving, Agent-First Backend for Japanese Tax Calculation",
         version="0.1.0",
+    )
+    cors_origins = os.environ.get(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000",
+    ).split(",")
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
     register_error_handlers(application)
     application.include_router(health_router)

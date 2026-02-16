@@ -1,0 +1,29 @@
+{
+  "common": {
+    "appName": "TaxPilot",
+    "appDescription": "日本の確定申告をサポートするスマートアシスタント",
+    "welcome": "TaxPilotへようこそ",
+    "welcomeSubtitle": "日本の確定申告をインテリジェントにサポートします。収入管理、税務プロファイルの作成、税額計算をワンストップで。",
+    "getStarted": "はじめる",
+    "notFound": "ページが見つかりません",
+    "nav": {
+      "home": "ホーム",
+      "income": "収入",
+      "profile": "税務プロファイル",
+      "upload": "書類アップロード",
+      "calculate": "税額計算"
+    },
+    "footer": {
+      "status": "APIステータス",
+      "healthy": "接続済み",
+      "degraded": "一部障害",
+      "offline": "オフライン"
+    },
+    "locale": {
+      "ja": "日本語",
+      "en": "English",
+      "zh-TW": "繁體中文",
+      "switchLocale": "言語"
+    }
+  }
+}

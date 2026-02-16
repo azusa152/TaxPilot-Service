@@ -38,5 +38,15 @@ services:
     environment:
       - API_BASE=http://api:8000
 
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - api
+    environment:
+      - API_SERVER_BASE=http://api:8000
+
 volumes:
   pgdata:
