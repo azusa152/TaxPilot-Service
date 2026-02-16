@@ -102,6 +102,7 @@ function IncomeFormContent() {
             type="date"
             value={paymentDate}
             onChange={(e) => setPaymentDate(e.target.value)}
+            aria-describedby={errors.payment_date ? "payment-date-error" : undefined}
             className={inputClass}
           />
         </FormField>
@@ -111,6 +112,7 @@ function IncomeFormContent() {
             id="income-type"
             value={incomeType}
             onChange={(e) => setIncomeType(e.target.value as IncomeType)}
+            aria-describedby={errors.income_type ? "income-type-error" : undefined}
             className={inputClass}
           >
             <option value="">{t("selectType")}</option>
@@ -130,6 +132,7 @@ function IncomeFormContent() {
             step="1"
             value={grossAmount}
             onChange={(e) => setGrossAmount(e.target.value)}
+            aria-describedby={errors.gross_amount ? "gross-amount-error" : undefined}
             className={inputClass}
           />
         </FormField>
@@ -142,6 +145,7 @@ function IncomeFormContent() {
             step="1"
             value={socialInsurance}
             onChange={(e) => setSocialInsurance(e.target.value)}
+            aria-describedby={errors.social_insurance ? "social-insurance-error" : undefined}
             className={inputClass}
           />
         </FormField>
@@ -154,6 +158,7 @@ function IncomeFormContent() {
             step="1"
             value={withholdingTax}
             onChange={(e) => setWithholdingTax(e.target.value)}
+            aria-describedby={errors.withholding_tax ? "withholding-tax-error" : undefined}
             className={inputClass}
           />
         </FormField>
@@ -166,6 +171,7 @@ function IncomeFormContent() {
             step="1"
             value={residentTax}
             onChange={(e) => setResidentTax(e.target.value)}
+            aria-describedby={errors.resident_tax ? "resident-tax-error" : undefined}
             className={inputClass}
           />
         </FormField>

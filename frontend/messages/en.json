@@ -8,7 +8,10 @@
     "notFound": "Page not found",
     "loading": "Loading…",
     "error": "Something went wrong",
+    "errorBoundaryMessage": "An unexpected error occurred. Please try again.",
     "retry": "Retry",
+    "close": "Close",
+    "skipToContent": "Skip to content",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -16,6 +19,7 @@
     "back": "Back",
     "noData": "No data yet",
     "nav": {
+      "menu": "Menu",
       "home": "Home",
       "income": "Income",
       "profile": "Tax Profile",

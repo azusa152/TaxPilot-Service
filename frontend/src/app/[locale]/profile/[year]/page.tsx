@@ -14,8 +14,9 @@ import {
   type SchemaDefinition,
 } from "@/lib/api-client";
 import { inputClass } from "@/lib/utils";
+import { useToast } from "@/lib/toast-context";
 import { RequireUser } from "@/components/shared/RequireUser";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { FormSkeleton } from "@/components/shared/FormSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { FormField } from "@/components/shared/FormField";
 import { DynamicFormRenderer } from "@/components/shared/DynamicFormRenderer";
@@ -36,6 +37,7 @@ function ProfileFormContent() {
   const tCommon = useTranslations("common");
   const tValidation = useTranslations("profile.validation");
   const { user } = useUser();
+  const { addToast } = useToast();
   const router = useRouter();
   const params = useParams();
   const year = Number(params.year);
@@ -64,7 +66,6 @@ function ProfileFormContent() {
     {},
   );
   const [submitting, setSubmitting] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isNewProfile, setIsNewProfile] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -72,7 +73,6 @@ function ProfileFormContent() {
     setLoading(true);
     setFetchError(null);
     setSubmitError(null);
-    setSaveMessage(null);
     setIsNewProfile(false);
 
     try {
@@ -171,7 +171,6 @@ function ProfileFormContent() {
     if (!user) return;
 
     setSubmitting(true);
-    setSaveMessage(null);
     setSubmitError(null);
 
     try {
@@ -199,7 +198,7 @@ function ProfileFormContent() {
           Math.round(Number(idecoMonthlyContribution)) || 0,
         additional_attributes: cleanedAttrs,
       });
-      setSaveMessage(t("saved"));
+      addToast(t("saved"), "success");
       setIsNewProfile(false);
     } catch {
       setSubmitError(tCommon("error"));
@@ -216,7 +215,7 @@ function ProfileFormContent() {
     router.push(`/profile/${newYear}`);
   }
 
-  if (loading) return <LoadingState />;
+  if (loading) return <FormSkeleton fields={6} />;
   if (fetchError) return <ErrorState message={fetchError} onRetry={fetchData} />;
 
   return (
@@ -278,6 +277,7 @@ function ProfileFormContent() {
                 step="1"
                 value={dependentsCount}
                 onChange={(e) => setDependentsCount(e.target.value)}
+                aria-describedby={errors.dependents_count ? "dependents-count-error" : undefined}
                 className={inputClass}
               />
             </FormField>
@@ -294,6 +294,7 @@ function ProfileFormContent() {
                 step="1"
                 value={socialInsurancePremium}
                 onChange={(e) => setSocialInsurancePremium(e.target.value)}
+                aria-describedby={errors.social_insurance_premium ? "social-insurance-premium-error" : undefined}
                 className={inputClass}
               />
             </FormField>
@@ -310,6 +311,7 @@ function ProfileFormContent() {
                 step="1"
                 value={lifeInsurancePremium}
                 onChange={(e) => setLifeInsurancePremium(e.target.value)}
+                aria-describedby={errors.life_insurance_premium ? "life-insurance-premium-error" : undefined}
                 className={inputClass}
               />
             </FormField>
@@ -326,6 +328,7 @@ function ProfileFormContent() {
                 step="1"
                 value={idecoMonthlyContribution}
                 onChange={(e) => setIdecoMonthlyContribution(e.target.value)}
+                aria-describedby={errors.ideco_monthly_contribution ? "ideco-monthly-contribution-error" : undefined}
                 className={inputClass}
               />
             </FormField>
@@ -353,12 +356,6 @@ function ProfileFormContent() {
 
         {submitError && (
           <p className="text-sm text-destructive">{submitError}</p>
-        )}
-
-        {saveMessage && (
-          <p className="text-sm text-success">
-            {saveMessage}
-          </p>
         )}
 
         <div className="flex gap-3 pt-2">

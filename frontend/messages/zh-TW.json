@@ -8,7 +8,10 @@
     "notFound": "找不到頁面",
     "loading": "載入中…",
     "error": "發生錯誤",
+    "errorBoundaryMessage": "發生了意外錯誤。請重試。",
     "retry": "重試",
+    "close": "關閉",
+    "skipToContent": "跳至主要內容",
     "save": "儲存",
     "cancel": "取消",
     "delete": "刪除",
@@ -16,6 +19,7 @@
     "back": "返回",
     "noData": "尚無資料",
     "nav": {
+      "menu": "選單",
       "home": "首頁",
       "income": "收入",
       "profile": "稅務資料",

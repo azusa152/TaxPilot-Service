@@ -84,13 +84,14 @@ export function FileUpload({
             : "border-border hover:border-primary/50"
         } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
         role="button"
-        tabIndex={0}
+        tabIndex={disabled ? -1 : 0}
         onKeyDown={(e) => {
           if ((e.key === "Enter" || e.key === " ") && !disabled) {
             inputRef.current?.click();
           }
         }}
         aria-label={t("instruction")}
+        aria-disabled={disabled}
       >
         <Upload className="mb-3 h-8 w-8 text-muted-foreground" />
         <p className="text-sm text-foreground">{t("instruction")}</p>

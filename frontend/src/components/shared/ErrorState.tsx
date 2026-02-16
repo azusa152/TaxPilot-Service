@@ -11,7 +11,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
   const t = useTranslations("common");
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-16">
+    <div role="alert" className="flex flex-col items-center justify-center gap-4 py-16">
       <p className="text-destructive">{message ?? t("error")}</p>
       {onRetry && (
         <button

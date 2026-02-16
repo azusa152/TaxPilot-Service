@@ -12,7 +12,7 @@ import {
 import { formatJPY } from "@/lib/format";
 import { RequireUser } from "@/components/shared/RequireUser";
 import { DataTable, type Column } from "@/components/shared/DataTable";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Trash2 } from "lucide-react";
 
@@ -116,7 +116,7 @@ function IncomeListContent() {
     },
   ];
 
-  if (loading) return <LoadingState />;
+  if (loading) return <TableSkeleton rows={5} columns={6} />;
   if (error) return <ErrorState message={error} onRetry={fetchEntries} />;
 
   return (

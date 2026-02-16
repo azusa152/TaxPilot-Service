@@ -6,10 +6,20 @@ TaxPilot is a deterministic tax logic engine consumed by external AI Agents and 
 
 ## Tech Stack
 
+### Backend
 - **Language:** Python 3.11+
 - **Framework:** FastAPI (Async)
 - **Database:** PostgreSQL 15+ (SQLAlchemy 2.0 Async + Alembic)
 - **Ingestion:** microsoft/markitdown
+
+### Frontend
+- **Framework:** Next.js 14 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS with CSS variable theming (light/dark)
+- **i18n:** next-intl (Japanese, English, Traditional Chinese)
+- **Icons:** Lucide React
+
+### Infrastructure
 - **Containerization:** Docker Compose
 
 ## Prerequisites
@@ -41,6 +51,7 @@ All ports are configurable via `.env` to avoid conflicts when running alongside 
 | `POSTGRES_PORT` | `5432` | Host port for PostgreSQL |
 | `API_PORT` | `8000` | Host port for FastAPI |
 | `ADMIN_PORT` | `8501` | Host port for Streamlit admin dashboard |
+| `FRONTEND_PORT` | `3000` | Host port for Next.js frontend |
 
 ## Development Commands
 
@@ -53,6 +64,8 @@ All ports are configurable via `.env` to avoid conflicts when running alongside 
 | `make format` | Format with ruff |
 | `make migrate msg="description"` | Generate Alembic migration |
 | `make migrate-up` | Apply pending migrations |
+| `make frontend-dev` | Start frontend in dev mode (port 3000) |
+| `make frontend-build` | Build frontend production bundle |
 
 ## Project Structure
 
@@ -65,7 +78,23 @@ backend/src/
 ├── config.py         # pydantic-settings configuration
 ├── logging_config.py # Centralized logging
 └── main.py           # FastAPI app factory
+
+frontend/
+├── src/
+│   ├── app/[locale]/     # Next.js App Router pages (i18n routing)
+│   ├── components/
+│   │   ├── layout/       # Header, Sidebar, Footer, MobileNav
+│   │   ├── shared/       # Reusable components (DataTable, FormField, etc.)
+│   │   └── ui/           # Primitives (Skeleton, ToastContainer)
+│   ├── lib/              # API client, utilities, context providers
+│   └── i18n/             # Routing and navigation config
+├── messages/             # Translation files (en.json, ja.json, zh-TW.json)
+└── package.json
 ```
+
+### Frontend Architecture
+
+The frontend is a Next.js 14 App Router application with locale-prefix routing (`/ja/...`, `/en/...`, `/zh-TW/...`). Client-side components call the backend through a Next.js catch-all API route handler (`/api/[...path]`) that proxies requests to the FastAPI backend, avoiding CORS issues and Docker hostname resolution problems in the browser.
 
 ## Testing & Quality Assurance
 
