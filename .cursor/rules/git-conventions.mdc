@@ -1,3 +1,8 @@
+---
+description: Apply when creating commits, naming branches, or working with git workflow. Covers commit message format (type-colon-description, imperative mood) and branch naming conventions (type/kebab-case).
+alwaysApply: false
+---
+
 # Git Conventions
 
 ## Commit Messages
@@ -8,20 +13,23 @@
 -   **Body (optional):** Separate from subject by a blank line; explain *why*, not *what*.
 -   **Scope:** One logical change per commit; keep commits focused and meaningful.
 -   **Examples:**
-    -   `feat: Add browser timezone detection for timestamps`
-    -   `fix: Resolve Safari blank page caused by XSRF policy`
-    -   `docs: Update README with market badge feature`
-    -   `refactor: Extract hex-to-rgb helper for pie chart colors`
+    -   `feat: Add income entry CRUD endpoints`
+    -   `fix: Correct withholding tax calculation for bonus income`
+    -   `docs: Update API schema discovery documentation`
+    -   `refactor: Extract tax deduction logic into domain service`
+    -   `test: Add edge case tests for furusato nouzei limit`
+    -   `chore: Upgrade SQLAlchemy to 2.0.30`
 
 ## Branch Naming
 -   **Format:** `<type>/<short-kebab-case-description>`
 -   **Types:** `feat/`, `fix/`, `refactor/`, `docs/`, `chore/` (mirror commit types).
 -   **Default branch:** `main`
 -   **Examples:**
-    -   `feat/xray-analysis`
-    -   `fix/safari-blank-page`
-    -   `docs/update-readme`
+    -   `feat/income-entry-crud`
+    -   `fix/withholding-tax-calculation`
+    -   `docs/update-api-reference`
     -   `refactor/clean-architecture`
+    -   `chore/phase1-project-setup`
 
 ## Branch Workflow
 -   **Never commit new features or fixes directly to `main`.**

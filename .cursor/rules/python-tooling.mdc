@@ -1,0 +1,31 @@
+---
+description: Apply when working with Python backend code. Covers Python tooling standards including ruff formatter/linter, dependencies management, Makefile usage, and logging practices.
+globs:
+  - "backend/**/*.py"
+alwaysApply: false
+---
+
+# Python Tooling Standards
+
+## Python Version
+- **Python version:** 3.11+ (match CI and Docker configuration).
+
+## Formatter/Linter
+- **Formatter/Linter:** Use `ruff` for both formatting and linting. Run `ruff check --fix` and `ruff format` before committing.
+- **Import ordering:** stdlib, third-party, local — ruff handles this automatically.
+
+## Makefile Shortcuts
+- **Makefile shortcuts:** Use `make test`, `make lint`, `make format` from the project root. Run `make help` to see all targets.
+
+## Dependencies
+- **Dependencies:** Pin minimum versions in `backend/pyproject.toml`. When adding a new package, add it with a minimum version constraint.
+
+## Logging
+- Use `from src.logging_config import get_logger` and `logger = get_logger(__name__)` in every backend module.
+- Never use `print()` for diagnostic output; always use `logger.info()` / `logger.warning()` / `logger.error()`.
+- Log messages in English.
+- Log levels:
+  - **DEBUG:** Tracing and detailed diagnostics (e.g., parsed MarkItDown output, JSONB field values).
+  - **INFO:** Business events (e.g., "Created income entry for user X", "Ingested document: salary_slip.pdf").
+  - **WARNING:** Recoverable issues (e.g., MarkItDown failed to parse a table, missing optional field).
+  - **ERROR:** Failures requiring attention (e.g., DB connection lost, algorithm registry load failure).

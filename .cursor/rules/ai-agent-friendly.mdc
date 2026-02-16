@@ -1,0 +1,130 @@
+---
+description: Apply when designing or implementing FastAPI backend APIs or agent-facing endpoints. Covers structured responses, OpenAPI completeness, error codes, schema discovery, and agent interaction design.
+globs: ["backend/**"]
+---
+
+# AI Agent-Friendly System Design
+
+This system is **AI agent-driven**. The primary consumer is OpenClaw (or any LLM tool-use agent). Every API surface must be designed so that an AI agent can discover, call, and interpret endpoints **without human assistance**.
+
+---
+
+## 1. Core Philosophy
+
+We are building a backend *for Agents*, not humans. The API must be self-documenting and error-tolerant for LLMs.
+
+---
+
+## 2. Structured, Machine-Parseable Responses
+
+- Every endpoint MUST return JSON with a typed Pydantic `response_model`.
+- Use a consistent response envelope:
+
+```python
+# GOOD — typed response model with clear structure
+class TaxProfileResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    user_id: str = Field(description="UUID of the user")
+    year: int = Field(description="Tax year")
+    has_spouse: bool = Field(description="Whether the user has a spouse for tax purposes")
+    additional_attributes: dict[str, Any] = Field(description="Dynamic year-specific tax fields")
+
+@router.get("/tax-profiles/{user_id}/{year}", response_model=TaxProfileResponse, summary="Get annual tax profile")
+async def get_tax_profile(user_id: str, year: int): ...
+
+# BAD — untyped dict
+@router.get("/tax-profiles/{user_id}/{year}")
+async def get_tax_profile(user_id: str, year: int):
+    return {"profile": {...}}
+```
+
+## 3. Semantic Error Messages
+
+- All errors MUST return a JSON body with both `detail` (human-readable) and `error_code` (machine-readable slug).
+- Agents branch on `error_code`, not on substring matching `detail`.
+
+```python
+# GOOD — semantic, actionable error
+raise HTTPException(status_code=400, detail={
+    "error_code": "MISSING_REQUIRED_FIELD",
+    "detail": "Missing 'spouse_income' field. Required when 'has_spouse' is true."
+})
+
+# BAD — bare string detail
+raise HTTPException(status_code=400, detail="Bad request.")
+```
+
+## 4. Schema Discovery
+
+- Always expose `GET /.../definition` endpoints so Agents can learn input requirements dynamically.
+- The `ProfileDefinition` entity defines what fields are required for each tax year. Agents call this endpoint to know what data to collect.
+
+```python
+# Agent discovers what fields to collect for 2024:
+# GET /profile-definition/2024
+# Response: { "year": 2024, "schema_definition": { "fields": [...] } }
+```
+
+## 5. Atomic Tools
+
+- Each API endpoint should do *one* thing well.
+- Avoid complex multi-step workflows in a single endpoint.
+- Examples:
+  - `POST /income-entries` — Create a single income entry.
+  - `GET /tax-profiles/{user_id}/{year}` — Retrieve one tax profile.
+  - `POST /ingestion/upload` — Ingest one document.
+
+## 6. Statelessness
+
+- Do not assume the Agent remembers previous requests.
+- Every request should contain the necessary context (or resource ID).
+
+## 7. Core API Endpoints
+
+### Income & Profile Management
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `GET /health` | GET | Return API health and DB connectivity status |
+| `POST /income-entries` | POST | Create a new income entry for a user |
+| `GET /income-entries/{user_id}` | GET | List income entries for a user |
+| `GET /tax-profiles/{user_id}/{year}` | GET | Get annual tax profile |
+| `PUT /tax-profiles/{user_id}/{year}` | PUT | Update tax profile (core + dynamic fields) |
+| `GET /profile-definition/{year}` | GET | Schema discovery: what fields are required for this year |
+
+### Document Ingestion
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `POST /ingestion/upload` | POST | Upload a financial document (PDF/Excel/Image) for MarkItDown processing |
+
+New endpoints follow this pattern: define the route in `api/`, delegate to `application/` services, never embed business logic in the handler.
+
+## 8. OpenAPI Completeness
+
+Every FastAPI route MUST have:
+1. A `summary` parameter in the decorator (shown in Swagger & OpenAPI JSON).
+2. A typed `response_model`.
+3. Pydantic request body schemas for POST/PUT/PATCH.
+
+This ensures `/openapi.json` is a complete, self-describing contract that any agent can consume.
+
+## 9. Pydantic Field Descriptions
+
+Use `Field(description="...")` extensively on all schema fields. This description is what the Agent reads to understand the parameter.
+
+```python
+class IncomeEntryCreate(BaseModel):
+    user_id: str = Field(description="UUID of the user this entry belongs to")
+    payment_date: date = Field(description="Date the payment was received (YYYY-MM-DD)")
+    income_type: IncomeType = Field(description="Type of income: SALARY, BONUS, or OTHER")
+    gross_amount: int = Field(description="Gross income amount in JPY")
+```
+
+## 10. Idempotent & Safe Operations
+
+- GET endpoints MUST be safe (no side effects).
+- PUT endpoints SHOULD be idempotent (re-sending the same update produces the same state).
+
+## 11. Consistent Datetime Format
+
+- All timestamps in JSON responses MUST be ISO 8601 UTC strings (e.g., `"2025-12-01T08:30:00Z"`).
+- Date-only fields use `YYYY-MM-DD` format.

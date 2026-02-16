@@ -1,0 +1,38 @@
+---
+description: Apply when handling secrets, API keys, environment variables, .env files, or security-sensitive configuration
+globs: ""
+alwaysApply: false
+---
+
+# Security Standards
+
+## Secrets Management
+- Never hardcode secrets, API keys, or tokens in source code.
+- Use `pydantic-settings` with `.env` for all configuration. Reference `.env.example` for required variables.
+- Never commit `.env` files. Only commit `.env.example` with placeholder values.
+
+## Environment Variables
+- All sensitive configuration must be loaded from environment variables via `pydantic-settings`.
+- Document all required environment variables in `.env.example` with placeholder values.
+- Use descriptive names for environment variables:
+  - `DATABASE_URL` — PostgreSQL connection string
+  - `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` — DB credentials
+  - `SECRET_KEY` — Application secret for signing
+  - `MARKITDOWN_API_KEY` — MarkItDown Vision API key (if using cloud OCR)
+
+## Financial Data Privacy
+- User income data and tax profiles are **sensitive PII** (Personally Identifiable Information).
+- Never log raw financial amounts, salary details, or tax profile contents at INFO level or above.
+- Use DEBUG level for any detailed financial data logging, and only in development.
+- API responses containing financial data must not be cached in shared/public caches.
+- DB backups containing user data must be encrypted at rest.
+
+## Input Validation
+- All user-supplied data must pass through Pydantic validation before reaching business logic.
+- Sanitize file uploads before passing to MarkItDown (validate file type, size limits).
+- Never trust `additional_attributes` JSONB content without schema validation against `ProfileDefinition`.
+
+## Docker Security
+- Containers run as non-root users.
+- Database ports are not exposed to the host in production.
+- Use Docker secrets or environment variables for credentials — never bake them into images.

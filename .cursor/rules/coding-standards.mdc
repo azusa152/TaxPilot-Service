@@ -1,0 +1,67 @@
+---
+description: Core Clean Code and Clean Architecture principles for the project
+alwaysApply: true
+---
+
+# Coding Standards — Clean Code + Clean Architecture
+
+## Working with Existing Code
+- Before writing new modules, check existing files in the same layer for patterns to follow.
+- Reference actual files as examples (e.g., `backend/src/api/routes.py` for route patterns, `backend/src/infrastructure/models.py` for model patterns).
+- When in doubt, match the style of the nearest existing file rather than inventing a new convention.
+
+## Stack
+- Python 3.11+
+- FastAPI (Async)
+- SQLAlchemy (Async 2.0 style — `Mapped` / `mapped_column`)
+- Pydantic v2
+- PostgreSQL (JSONB for adaptive schema)
+- Alembic (Async migrations)
+- Streamlit (Dashboard)
+- microsoft/markitdown (Document ingestion)
+
+## Clean Architecture (Layered Structure)
+
+All backend code lives under `backend/src/` with strict layer separation:
+
+- **`domain/`** — Pure business rules, entities, enums, constants. No framework imports allowed.
+  - Examples: `IncomeType` enum, tax rate constants, `TaxProfile` value objects, calculation thresholds.
+- **`application/`** — Use-case orchestration and service functions. Depends only on `domain/` and repository interfaces.
+  - Examples: `TaxCalculationService` (orchestrates profile + income -> tax result), `IngestionService` (orchestrates file upload -> MarkItDown -> store).
+- **`infrastructure/`** — External adapters (PostgreSQL, MarkItDown, external APIs). Implements interfaces defined by upper layers.
+  - Examples: SQLAlchemy models, MarkItDown adapter, AlgorithmRegistry loader.
+- **`api/`** — FastAPI route handlers. Thin controllers that delegate to `application/` services.
+  - Examples: `POST /income-entries`, `GET /tax-profiles/{user_id}/{year}`, `GET /profile-definition/{year}`.
+- New code must be placed in the correct layer; never leak infrastructure concerns into `domain/`.
+
+### Dependency Rules
+
+```
+api/ → application/ → domain/
+         ↓
+    infrastructure/  → domain/
+```
+
+- `domain/` imports nothing from other layers.
+- `application/` imports from `domain/` only.
+- `infrastructure/` imports from `domain/` and `config`.
+- `api/` imports from `domain/`, `application/`, and `infrastructure/`.
+
+## Clean Code Practices
+- **Small, focused functions:** Each function should do one thing well with a descriptive name.
+- **No magic numbers or strings:** Use `domain/constants.py` for all thresholds, tax rates, and configuration values.
+- **DRY (Don't Repeat Yourself):** Extract duplicated logic into shared helpers or modules.
+- **Pure functions:** Prefer pure functions and immutable data where possible; isolate side effects at the boundary.
+
+## Style Guide
+1. **Type Hinting:** Mandatory everywhere. Use `typing.Optional`, `typing.List`, `dict[str, Any]`, etc.
+2. **Docstrings:** Google Style. Required for all public functions and API endpoints.
+3. **Async/Await:** Use `async def` for all I/O bound operations (DB, Network).
+4. **Dependency Injection:** Use `Depends()` for DB sessions and services.
+5. **Pydantic v2:** Use `Field(description="...")` on all schema fields — agents read these descriptions to understand parameters.
+6. **Response models:** Use `model_config = {"from_attributes": True}` for ORM-backed responses.
+
+## General Rules
+- **Graceful Error Handling:** Never crash on external failures (e.g., if MarkItDown fails to parse a document or a DB query fails, log a warning and return a meaningful error — don't crash the API).
+- **Language:** All logs, error messages, and documentation must be in **English**.
+- **Documentation Sync:** Any feature addition, modification, or removal MUST include updates to the corresponding documentation (README.md, API docs).

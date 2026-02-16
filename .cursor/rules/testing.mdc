@@ -1,0 +1,120 @@
+---
+description: Backend testing standards with pytest. Apply when writing or modifying tests in backend/tests/ or any test files.
+globs:
+  - "backend/tests/**"
+  - "**/*test*.py"
+  - "**/conftest.py"
+alwaysApply: false
+---
+
+# Backend Testing Standards (pytest)
+
+Every feature MUST ship with tests. No untested code in production.
+
+## Test File Structure
+
+Tests live in `backend/tests/` mirroring the source layout:
+
+```
+backend/tests/
+├── conftest.py
+├── api/
+│   └── test_health.py
+├── application/
+│   └── test_<service>.py
+├── infrastructure/
+│   └── test_ingestion.py
+└── domain/
+    └── test_<logic>.py
+```
+
+## Test Naming
+
+Use descriptive names: `test_<function>_should_<expected_behavior>`
+
+```python
+# GOOD
+def test_create_income_entry_should_return_201_on_valid_input(): ...
+def test_health_should_return_healthy_status(): ...
+def test_tax_profile_update_should_merge_jsonb_fields(): ...
+
+# BAD
+def test_income(): ...
+def test_1(): ...
+```
+
+## AAA Pattern
+
+Every test follows **Arrange / Act / Assert**:
+
+```python
+async def test_health_should_return_healthy_status(client):
+    # Arrange — test client from fixture
+
+    # Act
+    response = await client.get("/health")
+
+    # Assert
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"
+```
+
+## Fixtures & conftest.py
+
+- `conftest.py` provides: `AsyncClient` via `httpx.ASGITransport`, mock DB sessions where needed.
+- Use `@pytest.fixture` with appropriate scope (`session` for DB, `function` for per-test isolation).
+- `asyncio_mode = "auto"` is configured in `pyproject.toml` — no need for `@pytest.mark.asyncio` decorators.
+
+## Mock External Services
+
+- **MarkItDown**, **external APIs**, and any network I/O MUST be mocked in unit tests. Never hit real services.
+- Use `unittest.mock.patch` or `pytest-mock` to replace infrastructure adapters.
+- For DB-dependent tests, use an in-memory SQLite or a test PostgreSQL container.
+
+## Minimum Test Coverage Per Endpoint
+
+| Scenario | Status Code |
+|----------|-------------|
+| Happy path | 200 / 201 |
+| Validation error | 422 |
+| Not found | 404 |
+| Conflict / duplicate | 409 (where applicable) |
+
+## Test Scenarios by Module
+
+### Income Entries
+| Scenario | What to test |
+|----------|-------------|
+| Create income entry | Valid payload returns 201 with correct fields |
+| Validation error | Missing required fields (e.g., `gross_amount`) returns 422 |
+| Invalid income type | Non-enum value for `income_type` returns 422 |
+| List by user | Returns all entries for a given user_id |
+
+### Tax Profiles
+| Scenario | What to test |
+|----------|-------------|
+| Get profile | Returns core fields + JSONB `additional_attributes` |
+| Update profile | PUT merges JSONB fields correctly |
+| Profile not found | Non-existent user/year returns 404 |
+| Dynamic fields | JSONB `additional_attributes` round-trips correctly |
+
+### Profile Definition (Schema Discovery)
+| Scenario | What to test |
+|----------|-------------|
+| Get definition | Returns `schema_definition` JSONB for the requested year |
+| Year not found | Non-existent year returns 404 |
+
+### Document Ingestion
+| Scenario | What to test |
+|----------|-------------|
+| Upload PDF | MarkItDown processes file and returns Markdown content |
+| Unsupported format | Graceful error with meaningful message |
+| MarkItDown failure | Adapter failure is caught and returns 500 with `error_code` |
+
+## Golden Rule
+
+**All tax calculation logic must have unit tests covering edge cases.** This is non-negotiable — deterministic calculations are the core value of TaxPilot. Cover:
+- Zero-income edge cases
+- Maximum deduction limits
+- Spouse/dependents boundary conditions
+- Year-specific dynamic field variations

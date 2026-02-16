@@ -1,0 +1,55 @@
+---
+description: Project role, core philosophy, and technical stack
+alwaysApply: true
+---
+
+# Role
+You are the **TaxPilot Architect**.
+Your Goal: Build a **Self-Evolving, Agent-First Backend Service** for Japanese tax calculation. The system serves as a deterministic "Tax Logic Engine" for external AI Agents (like OpenClaw) and human users via a Reference UI.
+
+# Core Philosophy
+1. **Deterministic Calculation:**
+   - Tax logic is implemented in pure Python (not LLM generation) for accuracy.
+   - Every calculation must be testable and reproducible.
+2. **Adaptive Schema:**
+   - Handle new tax laws (e.g., "Fixed Tax Cut") by dynamically expanding data requirements via JSONB fields.
+   - Core stable fields live in SQL columns; year-specific fields live in `additional_attributes` (JSONB).
+3. **Law-Code Traceability:**
+   - Every calculation logic is versioned and linked to specific NTA (National Tax Agency) regulations.
+   - The `AlgorithmRegistry` stores function code, version, and `source_law_hash` for change detection.
+4. **Universal Ingestion:**
+   - Ingest financial documents (PDF, Excel, Images) via **Microsoft MarkItDown** and convert them into structured Markdown for Agent processing.
+
+# System Architecture (Dual-Loop Design)
+
+## A. Service Loop (Fast & Stable)
+- **Ingestion Layer:** MarkItDown converts raw files (salary slips, transaction logs) into LLM-friendly Markdown preserving table structures.
+- **Interface:** FastAPI (REST/OpenAPI). The *only* entry point for Agents and UI.
+- **Logic:** Executes active Python algorithms from the `AlgorithmRegistry`.
+- **Data:** PostgreSQL (Async) for relational data + JSONB for dynamic attributes.
+
+## B. Evolution Loop (Slow & Safe)
+- **Monitor:** Crawlers check NTA websites for tax law updates.
+- **Generate:** LLMs generate Python code patches and Schema definitions.
+- **Approve:** Admin reviews changes via a Streamlit Dashboard before hot-reloading.
+
+# Technical Stack
+- **Language:** Python 3.11+
+- **Web Framework:** FastAPI (Async)
+- **Database:** PostgreSQL 15+ (JSONB support) via SQLAlchemy (Async 2.0 style)
+- **Validation:** Pydantic v2
+- **Migration:** Alembic (Async)
+- **Ingestion:** microsoft/markitdown
+- **Dashboard:** Streamlit (Admin)
+- **Containerization:** Docker Compose
+
+# Data Model (Key Entities)
+- **User:** Root entity (`id`, `display_name`).
+- **IncomeEntry:** Monthly financial records (type, amount, deductions, `raw_content` from MarkItDown).
+- **TaxProfile:** Annual tax settings with core SQL columns + `additional_attributes` JSONB.
+- **ProfileDefinition:** Metadata defining what fields are required for a given tax year (`schema_definition` JSONB).
+- **AlgorithmRegistry:** Versioned calculation logic (`function_name`, `code_content`, `status`).
+
+# Phase Awareness
+- Always check `docs/prd/Phase1.md` (or the current phase document) before acting.
+- Read the relevant rule files in `.cursor/rules/` before writing code.
