@@ -48,7 +48,6 @@ The self-evolving capability: NTA regulation monitoring, LLM-assisted code gener
 | 6-Pre | [Phase6-Pre_Bootstrap.md](evolution-loop/Phase6-Pre_Bootstrap.md) | Cold start: seed AlgorithmRegistry, baseline NTA crawl, LLM verification of existing formulas |
 | 6E | [Phase6E_PipelineAndReview.md](evolution-loop/Phase6E_PipelineAndReview.md) | End-to-end pipeline orchestration, 4-option admin approval flow, audit trail, rollback |
 | 6F | [Phase6F_Notifications.md](evolution-loop/Phase6F_Notifications.md) | Email notification system (SMTP), pluggable interface, notification triggers |
-| Legacy | [Phase6_Legacy.md](evolution-loop/Phase6_Legacy.md) | Original Phase 6 skeleton (archived, superseded by the above documents) |
 
 ---
 
