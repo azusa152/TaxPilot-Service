@@ -5,13 +5,11 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useUser } from "@/lib/user-context";
 import { createIncomeEntry, type IncomeType } from "@/lib/api-client";
+import { inputClass } from "@/lib/utils";
 import { RequireUser } from "@/components/shared/RequireUser";
 import { FormField } from "@/components/shared/FormField";
 
 const INCOME_TYPES: IncomeType[] = ["SALARY", "BONUS", "OTHER"];
-
-const inputClass =
-  "w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
 interface FormErrors {
   payment_date?: string;

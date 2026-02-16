@@ -58,6 +58,48 @@ export interface IncomeEntryResponse {
   created_at: string;
 }
 
+export interface TaxProfileUpdate {
+  has_spouse: boolean;
+  dependents_count: number;
+  social_insurance_premium: number;
+  life_insurance_premium: number;
+  ideco_monthly_contribution: number;
+  additional_attributes: Record<string, unknown>;
+}
+
+export interface TaxProfileResponse {
+  id: number;
+  user_id: string;
+  year: number;
+  has_spouse: boolean;
+  dependents_count: number;
+  social_insurance_premium: number;
+  life_insurance_premium: number;
+  ideco_monthly_contribution: number;
+  additional_attributes: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface SchemaProperty {
+  type: string;
+  default?: unknown;
+  minimum?: number;
+  maximum?: number;
+  enum?: string[];
+  description?: string;
+}
+
+export interface SchemaDefinition {
+  properties?: Record<string, SchemaProperty>;
+  required?: string[];
+}
+
+export interface ProfileDefinitionResponse {
+  year: number;
+  schema_definition: SchemaDefinition;
+  created_at: string;
+}
+
 // ---------------------------------------------------------------------------
 // Transport helpers
 // ---------------------------------------------------------------------------
@@ -171,4 +213,34 @@ export async function deleteIncomeEntry(
   if (!res.ok) {
     throw new Error(`API error ${res.status}: ${res.statusText}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Tax Profiles
+// ---------------------------------------------------------------------------
+
+export async function getTaxProfile(
+  userId: string,
+  year: number,
+): Promise<TaxProfileResponse> {
+  return clientRequest<TaxProfileResponse>(`/tax-profiles/${userId}/${year}`);
+}
+
+export async function updateTaxProfile(
+  userId: string,
+  year: number,
+  data: TaxProfileUpdate,
+): Promise<TaxProfileResponse> {
+  return clientRequest<TaxProfileResponse>(`/tax-profiles/${userId}/${year}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getProfileDefinition(
+  year: number,
+): Promise<ProfileDefinitionResponse> {
+  return clientRequest<ProfileDefinitionResponse>(
+    `/profile-definition/${year}`,
+  );
 }

@@ -83,5 +83,32 @@
         "amountNonNegative": "Amount cannot be negative"
       }
     }
+  },
+  "profile": {
+    "title": "Tax Profile",
+    "yearLabel": "Tax Year",
+    "coreFields": "Basic Information",
+    "dynamicFields": "Year-Specific Fields",
+    "noDefinition": "No profile definition available for this tax year.",
+    "notFound": "No profile found for this year. Fill in the form to create one.",
+    "saving": "Saving…",
+    "saved": "Profile saved successfully.",
+    "field": {
+      "hasSpouse": "Has Spouse",
+      "dependentsCount": "Number of Dependents",
+      "socialInsurancePremium": "Annual Social Insurance Premium (JPY)",
+      "lifeInsurancePremium": "Annual Life Insurance Premium (JPY)",
+      "idecoMonthlyContribution": "Monthly iDeCo Contribution (JPY)"
+    },
+    "dynamicFieldLabel": {
+      "fixed_tax_cut_eligible": "Fixed Tax Cut Eligible",
+      "hometown_tax_donation": "Hometown Tax (Furusato Nozei) Donation (JPY)",
+      "medical_expense": "Medical Expenses (JPY)",
+      "earthquake_insurance_premium": "Earthquake Insurance Premium (JPY)"
+    },
+    "validation": {
+      "dependentsNonNegative": "Number of dependents cannot be negative",
+      "amountNonNegative": "Amount cannot be negative"
+    }
   }
 }

@@ -83,5 +83,32 @@
         "amountNonNegative": "金額不可為負數"
       }
     }
+  },
+  "profile": {
+    "title": "稅務資料",
+    "yearLabel": "稅務年度",
+    "coreFields": "基本資訊",
+    "dynamicFields": "年度專屬欄位",
+    "noDefinition": "此稅務年度尚無資料定義。",
+    "notFound": "找不到此年度的資料。請填寫表單以建立。",
+    "saving": "儲存中…",
+    "saved": "資料已成功儲存。",
+    "field": {
+      "hasSpouse": "配偶有無",
+      "dependentsCount": "扶養人數",
+      "socialInsurancePremium": "年度社會保險費（日圓）",
+      "lifeInsurancePremium": "年度人壽保險費（日圓）",
+      "idecoMonthlyContribution": "iDeCo 月繳金額（日圓）"
+    },
+    "dynamicFieldLabel": {
+      "fixed_tax_cut_eligible": "定額減稅對象",
+      "hometown_tax_donation": "故鄉稅捐款額（日圓）",
+      "medical_expense": "醫療費用（日圓）",
+      "earthquake_insurance_premium": "地震保險費（日圓）"
+    },
+    "validation": {
+      "dependentsNonNegative": "扶養人數不可為負數",
+      "amountNonNegative": "金額不可為負數"
+    }
   }
 }

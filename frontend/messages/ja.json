@@ -83,5 +83,32 @@
         "amountNonNegative": "金額は0以上を入力してください"
       }
     }
+  },
+  "profile": {
+    "title": "税務プロファイル",
+    "yearLabel": "対象年度",
+    "coreFields": "基本情報",
+    "dynamicFields": "年度固有の項目",
+    "noDefinition": "この年度のプロファイル定義がありません。",
+    "notFound": "この年度のプロファイルが見つかりません。フォームに入力して作成してください。",
+    "saving": "保存中…",
+    "saved": "プロファイルを保存しました。",
+    "field": {
+      "hasSpouse": "配偶者の有無",
+      "dependentsCount": "扶養家族の人数",
+      "socialInsurancePremium": "年間社会保険料（円）",
+      "lifeInsurancePremium": "年間生命保険料（円）",
+      "idecoMonthlyContribution": "iDeCo月額掛金（円）"
+    },
+    "dynamicFieldLabel": {
+      "fixed_tax_cut_eligible": "定額減税対象",
+      "hometown_tax_donation": "ふるさと納税寄附額（円）",
+      "medical_expense": "医療費（円）",
+      "earthquake_insurance_premium": "地震保険料（円）"
+    },
+    "validation": {
+      "dependentsNonNegative": "扶養家族の人数は0以上を入力してください",
+      "amountNonNegative": "金額は0以上を入力してください"
+    }
   }
 }
