@@ -1,0 +1,23 @@
+{
+  "changes": [
+    {
+      "change_type": "THRESHOLD_UPDATE",
+      "affected_function": "calc_income_tax",
+      "old_value": "N/A",
+      "new_value": "5% for income up to 1,950,000 JPY",
+      "description": "Baseline: Income tax rate of 5% for taxable income up to 1,950,000 JPY",
+      "confidence_score": 0.98
+    },
+    {
+      "change_type": "THRESHOLD_UPDATE",
+      "affected_function": "calc_income_tax",
+      "old_value": "N/A",
+      "new_value": "10% for income 1,950,001 to 3,300,000 JPY",
+      "description": "Baseline: Income tax rate of 10% for taxable income from 1,950,001 to 3,300,000 JPY",
+      "confidence_score": 0.98
+    }
+  ],
+  "summary": "Baseline extraction of current income tax rates from NTA page",
+  "tax_year": 2024,
+  "no_changes_detected": false
+}

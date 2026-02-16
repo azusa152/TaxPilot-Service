@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from src.domain.enums import IncomeType, LlmProvider
+from src.domain.enums import IncomeType, LawChangeType, LlmProvider
 
 
 # --- User ---
@@ -226,3 +226,57 @@ class CrawlerHealthStatus(BaseModel):
     next_scheduled_run: datetime | None = Field(description="Next scheduled crawl time")
     total_target_pages: int = Field(description="Total number of monitored pages")
     active_target_pages: int = Field(description="Number of actively monitored pages")
+
+
+# --- Regulation Parser (Phase 6C) ---
+class LawChange(BaseModel):
+    """A single identified change in tax regulations.
+
+    Used as part of the LLM response_format for structured output.
+    The LawChangeType enum constrains the JSON schema sent to the LLM,
+    ensuring it only returns valid change types.
+    """
+
+    change_type: LawChangeType = Field(
+        description="Type of tax law change identified"
+    )
+    affected_function: str = Field(
+        description="Name of the tax calculation function affected "
+        "(e.g., 'calc_income_tax', 'calc_salary_income_deduction')"
+    )
+    old_value: str = Field(
+        description="Previous value or rule (use 'N/A' for new additions)"
+    )
+    new_value: str = Field(
+        description="New value or rule being introduced"
+    )
+    description: str = Field(
+        description="Human-readable description of the change in English"
+    )
+    confidence_score: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="LLM confidence in this change identification (0.0 to 1.0)",
+    )
+
+
+class RegulationAnalysis(BaseModel):
+    """Structured analysis of NTA regulation changes.
+
+    Returned by the RegulationParser. Used as LLM response_format.
+    """
+
+    changes: list[LawChange] = Field(
+        description="List of identified law changes"
+    )
+    summary: str = Field(
+        description="Brief summary of all changes found in this regulation update"
+    )
+    tax_year: int = Field(
+        description="The tax year these changes apply to"
+    )
+    no_changes_detected: bool = Field(
+        default=False,
+        description="True if the page content changed but no tax rule changes were found "
+        "(e.g., only formatting or navigation changes)",
+    )

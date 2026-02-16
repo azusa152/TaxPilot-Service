@@ -1,0 +1,23 @@
+{
+  "changes": [
+    {
+      "change_type": "NEW_DEDUCTION",
+      "affected_function": "calc_income_tax",
+      "old_value": "N/A",
+      "new_value": "30,000 JPY credit per person (taxpayer + dependents)",
+      "description": "2024 Fixed Tax Cut: reduce income tax by 30,000 per eligible person",
+      "confidence_score": 0.95
+    },
+    {
+      "change_type": "NEW_FIELD_REQUIRED",
+      "affected_function": "calc_income_tax",
+      "old_value": "N/A",
+      "new_value": "fixed_tax_cut_eligible_count: int",
+      "description": "New field needed: number of persons eligible for the fixed tax cut",
+      "confidence_score": 0.90
+    }
+  ],
+  "summary": "2024 Fixed Tax Cut: 30,000 JPY income tax credit per taxpayer and each dependent",
+  "tax_year": 2024,
+  "no_changes_detected": false
+}

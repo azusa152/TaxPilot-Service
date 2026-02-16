@@ -18,6 +18,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from src.domain.enums import EvolutionRunStatus
+
 
 class Base(DeclarativeBase):
     pass
@@ -131,6 +133,42 @@ class LlmProviderConfig(Base):
     __table_args__ = (Index("ix_llm_provider_configs_provider_active", "provider", "is_active"),)
 
 
+class EvolutionRun(Base):
+    """Tracks an end-to-end evolution pipeline run.
+
+    Status progression: PENDING → CRAWLING → PARSING → GENERATING →
+    AWAITING_REVIEW → ACCEPTED / MODIFIED / REGENERATING / SKIPPED / DEFERRED / FAILED
+    """
+
+    __tablename__ = "evolution_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    trigger: Mapped[str] = mapped_column(String(20), nullable=False)  # CrawlerRunTrigger
+    status: Mapped[str] = mapped_column(
+        String(30), nullable=False, default=EvolutionRunStatus.PENDING
+    )
+    nta_snapshot_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("nta_page_snapshots.id"), nullable=True
+    )
+    parsed_changes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # TODO(Phase 6E): Add review_decision, rationale, modified_code,
+    # regeneration_hints, regeneration_count, max_regenerations fields
+    # for the admin review workflow.
+
+    __table_args__ = (
+        Index("ix_evolution_runs_status", "status"),
+        Index("ix_evolution_runs_started_at", "started_at"),
+    )
+
+
 class LlmUsageLog(Base):
     """Tracks token usage and cost for each LLM call."""
 
@@ -142,8 +180,9 @@ class LlmUsageLog(Base):
     prompt_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
     completion_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
     cost_usd: Mapped[float | None] = mapped_column(Numeric(10, 6), nullable=True)
-    # TODO(Phase 6E): Add ForeignKey("evolution_runs.id") once the table exists
-    evolution_run_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    evolution_run_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("evolution_runs.id"), nullable=True
+    )
     caller: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
