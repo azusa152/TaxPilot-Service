@@ -28,5 +28,15 @@ services:
     volumes:
       - ./backend:/app
 
+  admin:
+    build:
+      context: ./admin
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    environment:
+      - API_BASE=http://api:8000
+
 volumes:
   pgdata:
