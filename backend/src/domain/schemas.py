@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from src.domain.enums import IncomeType, LawChangeType, LlmProvider
+from src.domain.enums import IncomeType, LawChangeType, LlmProvider, VerificationStatus
 
 
 # --- User ---
@@ -348,3 +348,49 @@ class SchemaChangeProposal(BaseModel):
     change_rationale: str = Field(
         description="Explanation of why these schema changes are needed"
     )
+
+
+# --- Bootstrap & Verification (Phase 6-Pre) ---
+class VerificationResult(BaseModel):
+    """Result of verifying a single formula against NTA text.
+
+    Used as LLM response_format for structured verification output.
+    """
+
+    function_name: str = Field(
+        description="Name of the tax calculation function being verified"
+    )
+    status: VerificationStatus = Field(
+        description="Verification result: MATCH, MISMATCH, or PARTIAL"
+    )
+    extracted_thresholds: list[dict] = Field(
+        description="Tax thresholds/rates extracted from the NTA text by the LLM. "
+        "Each entry: {bracket: str, threshold: int, rate_or_amount: str}"
+    )
+    hardcoded_comparison: str = Field(
+        description="Line-by-line comparison of LLM-extracted rules vs hardcoded logic"
+    )
+    discrepancies: list[str] = Field(
+        description="List of specific discrepancies found (empty if MATCH)"
+    )
+    confidence_score: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="Confidence in the verification result",
+    )
+    summary: str = Field(
+        description="Brief summary of the verification in English"
+    )
+
+
+class BootstrapReport(BaseModel):
+    """Overall bootstrap verification report."""
+
+    total_functions: int = Field(description="Total functions verified")
+    matched: int = Field(description="Number of functions that match NTA text")
+    mismatched: int = Field(description="Number of functions with mismatches")
+    partial: int = Field(description="Number of partial matches")
+    results: list[VerificationResult] = Field(
+        description="Per-function verification results"
+    )
+    bootstrap_completed_at: datetime

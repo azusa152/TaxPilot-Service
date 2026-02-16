@@ -1,0 +1,14 @@
+{
+  "function_name": "calc_income_tax",
+  "status": "MISMATCH",
+  "extracted_thresholds": [
+    {"bracket": "1", "threshold": 1950000, "rate_or_amount": "5%"},
+    {"bracket": "2", "threshold": 3300000, "rate_or_amount": "10%"}
+  ],
+  "hardcoded_comparison": "Bracket 2 threshold mismatch: NTA states 3,500,000 but function uses 3,300,000.",
+  "discrepancies": [
+    "Bracket 2 upper threshold: NTA 3,500,000 vs code 3,300,000"
+  ],
+  "confidence_score": 0.88,
+  "summary": "Mismatch found in bracket 2 threshold."
+}

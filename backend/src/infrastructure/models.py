@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from src.domain.enums import EvolutionRunStatus, ProposalStatus
+from src.domain.enums import EvolutionRunStatus, ProposalStatus, VerificationStatus
 
 
 class Base(DeclarativeBase):
@@ -313,4 +313,31 @@ class GenerationAttempt(Base):
 
     __table_args__ = (
         Index("ix_generation_attempts_evolution_run_id", "evolution_run_id"),
+    )
+
+
+class BootstrapVerificationReport(Base):
+    """Stores LLM verification results for each formula against NTA text."""
+
+    __tablename__ = "bootstrap_verification_reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    function_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    nta_page_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    nta_snapshot_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("nta_page_snapshots.id"), nullable=False
+    )
+    verification_status: Mapped[str] = mapped_column(
+        String(20), default=VerificationStatus.MATCH, nullable=False
+    )
+    details: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    confidence_score: Mapped[float] = mapped_column(Numeric(3, 2), nullable=False)
+    llm_extracted_rules: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index("ix_bootstrap_verification_function", "function_name"),
+        Index("ix_bootstrap_verification_snapshot", "nta_snapshot_id"),
     )

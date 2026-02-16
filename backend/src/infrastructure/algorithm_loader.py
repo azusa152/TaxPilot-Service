@@ -15,6 +15,26 @@ from src.logging_config import get_logger
 
 logger = get_logger(__name__)
 
+# Safe builtins whitelist for algorithm execution (defense-in-depth).
+# Admin-approved algorithms are validated by CodeSandbox, but this provides
+# an additional runtime safety layer. Only math and basic operations are allowed.
+_SAFE_BUILTINS = {
+    "int": int,
+    "float": float,
+    "max": max,
+    "min": min,
+    "abs": abs,
+    "round": round,
+    "range": range,
+    "len": len,
+    "sum": sum,
+    "bool": bool,
+    "str": str,
+    "True": True,
+    "False": False,
+    "None": None,
+}
+
 
 class AlgorithmLoader:
     """Loads and caches active algorithms from the registry."""
@@ -29,7 +49,7 @@ class AlgorithmLoader:
             Dict mapping function_name to callable function.
         """
         result = await db.execute(
-            select(AlgorithmRegistry).where(AlgorithmRegistry.status == AlgorithmStatus.ACTIVE.value)
+            select(AlgorithmRegistry).where(AlgorithmRegistry.status == AlgorithmStatus.ACTIVE)
         )
         algorithms = result.scalars().all()
 
@@ -52,16 +72,19 @@ class AlgorithmLoader:
     def _compile_function(self, function_name: str, code_content: str) -> Callable:
         """Compile Python source code into a callable function.
 
-        WARNING: This executes arbitrary code. Only use with admin-approved code
-        from the AlgorithmRegistry.
-
-        TODO: For defense-in-depth, restrict __builtins__ to a whitelist of safe
-        functions (int, max, min, abs, round, range, len) in a future hardening pass.
+        Uses a restricted builtins whitelist for defense-in-depth. Admin-approved
+        algorithms are validated by CodeSandbox before activation, but this provides
+        an additional runtime safety layer.
         """
         module = types.ModuleType(f"taxpilot_algo_{function_name}")
-        exec(code_content, module.__dict__)  # noqa: S102
+        restricted_globals = {"__builtins__": _SAFE_BUILTINS}
+        # SECURITY NOTE: This exec() is used with a restricted builtins whitelist.
+        # The code has already been validated by CodeSandbox and approved by an admin.
+        # This restriction provides defense-in-depth by blocking dangerous operations
+        # at runtime (e.g., file access, network calls, module imports).
+        exec(code_content, restricted_globals)  # noqa: S102
 
-        fn = getattr(module, function_name, None)
+        fn = restricted_globals.get(function_name)
         if fn is None or not callable(fn):
             raise ValueError(f"Code for '{function_name}' does not define a callable with that name.")
         return fn

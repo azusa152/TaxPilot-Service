@@ -112,3 +112,34 @@ law changes, determine if any new user input fields are needed in the tax profil
 
 Respond with structured JSON matching the SchemaChangeProposal schema.
 """
+
+
+# --- Bootstrap & Verification (Phase 6-Pre) ---
+VERIFICATION_PROMPT = """You are a Japanese tax regulation expert. Verify whether the
+following Python tax calculation function correctly implements the rules described in the
+NTA page content.
+
+## NTA Page Content (authoritative source):
+{nta_content}
+
+## Python function to verify:
+{function_code}
+
+## Function name: {function_name}
+
+## Instructions:
+1. Read the NTA page content carefully and extract ALL tax thresholds, rates, brackets,
+   and calculation rules.
+2. Compare each extracted rule against the Python function's logic.
+3. For bracket-based functions, verify EVERY threshold boundary and corresponding rate/amount.
+4. Report the verification status:
+   - MATCH: All rules in the function match the NTA text
+   - MISMATCH: One or more rules differ between the function and NTA text
+   - PARTIAL: Some rules match, but some cannot be verified (e.g., NTA text is ambiguous)
+5. List specific discrepancies if any (e.g., "NTA states bracket cap of 1,950,000 for salary
+   deduction — matches line 31 of the function" or "NTA states rate of 10% for bracket 2,
+   but function uses 0.12").
+6. Assign a confidence score (0.0-1.0) for the overall verification.
+
+Respond with structured JSON matching the VerificationResult schema.
+"""

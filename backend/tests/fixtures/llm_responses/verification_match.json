@@ -1,0 +1,17 @@
+{
+  "function_name": "calc_income_tax",
+  "status": "MATCH",
+  "extracted_thresholds": [
+    {"bracket": "1", "threshold": 1950000, "rate_or_amount": "5%"},
+    {"bracket": "2", "threshold": 3300000, "rate_or_amount": "10%"},
+    {"bracket": "3", "threshold": 6950000, "rate_or_amount": "20%"},
+    {"bracket": "4", "threshold": 9000000, "rate_or_amount": "23%"},
+    {"bracket": "5", "threshold": 18000000, "rate_or_amount": "33%"},
+    {"bracket": "6", "threshold": 40000000, "rate_or_amount": "40%"},
+    {"bracket": "7", "threshold": null, "rate_or_amount": "45%"}
+  ],
+  "hardcoded_comparison": "All 7 brackets match the NTA 2024 income tax rate table.",
+  "discrepancies": [],
+  "confidence_score": 0.95,
+  "summary": "The calc_income_tax function correctly implements all 7 progressive tax brackets as specified by the NTA for 2024."
+}

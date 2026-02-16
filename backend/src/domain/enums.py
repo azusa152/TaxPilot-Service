@@ -60,6 +60,14 @@ class ProposalStatus(StrEnum):
     REJECTED = "REJECTED"
 
 
+class VerificationStatus(StrEnum):
+    """Result of verifying a formula against NTA text."""
+
+    MATCH = "MATCH"
+    MISMATCH = "MISMATCH"
+    PARTIAL = "PARTIAL"
+
+
 class LawChangeType(StrEnum):
     """Types of tax law changes the parser can identify."""
 

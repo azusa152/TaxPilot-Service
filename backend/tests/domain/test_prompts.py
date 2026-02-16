@@ -5,6 +5,7 @@ from src.domain.prompts import (
     REGULATION_PARSE_PROMPT,
     REGULATION_PARSE_PROMPT_FIRST_SNAPSHOT,
     SCHEMA_GENERATION_PROMPT,
+    VERIFICATION_PROMPT,
 )
 
 
@@ -215,3 +216,54 @@ class TestSchemaGenerationPrompt:
         )
         assert "snake_case" in result
         assert "Japanese description" in result
+
+
+class TestVerificationPrompt:
+    """Tests for the bootstrap verification prompt template."""
+
+    def test_renders_with_all_placeholders(self):
+        result = VERIFICATION_PROMPT.format(
+            nta_content="# Income tax rates table\n| Rate | Amount |",
+            function_code="def calc_income_tax(taxable_income):\n    return 0",
+            function_name="calc_income_tax",
+        )
+
+        assert "Income tax rates table" in result
+        assert "calc_income_tax" in result
+        assert "def calc_income_tax" in result
+
+    def test_no_undefined_placeholders(self):
+        result = VERIFICATION_PROMPT.format(
+            nta_content="content",
+            function_code="code",
+            function_name="func",
+        )
+        assert "{" not in result
+        assert "}" not in result
+
+    def test_contains_verification_status_instructions(self):
+        result = VERIFICATION_PROMPT.format(
+            nta_content="content",
+            function_code="code",
+            function_name="func",
+        )
+        assert "MATCH" in result
+        assert "MISMATCH" in result
+        assert "PARTIAL" in result
+
+    def test_contains_response_format_instructions(self):
+        result = VERIFICATION_PROMPT.format(
+            nta_content="content",
+            function_code="code",
+            function_name="func",
+        )
+        assert "VerificationResult" in result
+
+    def test_contains_confidence_score_instructions(self):
+        result = VERIFICATION_PROMPT.format(
+            nta_content="content",
+            function_code="code",
+            function_name="func",
+        )
+        assert "confidence score" in result
+        assert "0.0-1.0" in result
