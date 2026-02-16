@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from src.domain.enums import IncomeType
+from src.domain.enums import IncomeType, LlmProvider
 
 
 # --- User ---
@@ -123,3 +123,43 @@ class ProfileDefinitionResponse(BaseModel):
     created_at: datetime = Field(description="Definition creation timestamp (ISO 8601)")
 
     model_config = {"from_attributes": True}
+
+
+# --- LLM Configuration (Phase 6A) ---
+class LlmConfigCreate(BaseModel):
+    """Request schema for creating/updating LLM provider configuration."""
+
+    provider: LlmProvider = Field(description="LLM provider name (gemini, openai, anthropic)")
+    model_name: str = Field(description="LiteLLM model string (e.g., 'openai/gpt-4o')")
+    api_token: str = Field(description="API token for the provider (will be encrypted at rest)")
+    monthly_budget_usd: float = Field(
+        default=50.00,
+        description="Monthly budget cap in USD. Calls are rejected when exceeded.",
+    )
+
+
+class LlmConfigResponse(BaseModel):
+    """Response schema for LLM provider configuration (token masked)."""
+
+    id: int = Field(description="Config ID")
+    provider: str = Field(description="LLM provider name")
+    model_name: str = Field(description="LiteLLM model string")
+    masked_token: str = Field(description="Masked API token (e.g., 'sk-...a3f2')")
+    is_active: bool = Field(description="Whether this config is the active one")
+    monthly_budget_usd: float = Field(description="Monthly budget cap in USD")
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class LlmUsageSummary(BaseModel):
+    """Summary of LLM usage and costs."""
+
+    total_calls: int = Field(description="Total number of LLM calls")
+    total_prompt_tokens: int = Field(description="Total prompt tokens used")
+    total_completion_tokens: int = Field(description="Total completion tokens used")
+    total_cost_usd: float = Field(description="Total cost in USD")
+    daily_breakdown: list[dict] = Field(description="Cost breakdown by day [{date, calls, cost_usd}]")
+    monthly_total_usd: float = Field(description="Total cost for the current month")
+    budget_remaining_usd: float = Field(description="Remaining budget for the current month")

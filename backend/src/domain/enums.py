@@ -11,3 +11,11 @@ class AlgorithmStatus(StrEnum):
     DRAFT = "DRAFT"
     ACTIVE = "ACTIVE"
     ARCHIVED = "ARCHIVED"
+
+
+class LlmProvider(StrEnum):
+    """Supported LLM providers."""
+
+    GEMINI = "gemini"
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
