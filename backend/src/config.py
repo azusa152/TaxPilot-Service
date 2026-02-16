@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     llm_encryption_key: str = ""
     llm_monthly_budget_usd: float = 50.00
 
+    # NTA Crawler (Phase 6B)
+    nta_crawl_interval_hours: int = 24
+    nta_crawl_rate_limit_seconds: float = 2.0
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

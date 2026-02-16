@@ -163,3 +163,66 @@ class LlmUsageSummary(BaseModel):
     daily_breakdown: list[dict] = Field(description="Cost breakdown by day [{date, calls, cost_usd}]")
     monthly_total_usd: float = Field(description="Total cost for the current month")
     budget_remaining_usd: float = Field(description="Remaining budget for the current month")
+
+
+# --- NTA Crawler (Phase 6B) ---
+class NtaTargetPageConfig(BaseModel):
+    """Schema for creating/updating a target NTA page."""
+
+    name: str = Field(description="Short name for the page (e.g., 'income_tax_rates')")
+    url: str = Field(description="Full URL of the NTA page")
+    description: str | None = Field(None, description="Description of what this page contains")
+    is_active: bool = Field(default=True, description="Whether to actively monitor this page")
+    check_interval_hours: int = Field(default=24, description="How often to check this page (in hours)")
+
+
+class NtaPageChange(BaseModel):
+    """Represents a detected change on an NTA page."""
+
+    page_name: str = Field(description="Name of the NTA target page")
+    page_url: str = Field(description="URL of the NTA page")
+    previous_hash: str | None = Field(description="Content hash of the previous snapshot")
+    new_hash: str = Field(description="Content hash of the new snapshot")
+    snapshot_id: int = Field(description="ID of the new snapshot")
+
+
+class NtaSnapshotDetail(BaseModel):
+    """Detailed view of a single snapshot including markdown content."""
+
+    id: int = Field(description="Snapshot ID")
+    target_page_name: str = Field(description="Name of the monitored page")
+    target_page_url: str = Field(description="URL of the monitored page")
+    content_hash: str = Field(description="SHA-256 hash of fit_markdown")
+    raw_markdown: str | None = Field(description="Full page as markdown")
+    fit_markdown: str | None = Field(description="LLM-optimized markdown (boilerplate removed)")
+    extracted_tables: dict | None = Field(description="Structured table data as JSON")
+    status: str = Field(description="SUCCESS / FAILED / TIMEOUT")
+    error_message: str | None = Field(description="Error message if status is FAILED/TIMEOUT")
+    response_time_ms: int | None = Field(description="Response time in milliseconds")
+    fetched_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CrawlerRunSummary(BaseModel):
+    """Summary of a single crawler run."""
+
+    id: int = Field(description="Run ID")
+    trigger: str = Field(description="MANUAL or SCHEDULED")
+    started_at: datetime
+    completed_at: datetime | None
+    pages_checked: int
+    pages_changed: int
+    pages_failed: int
+
+    model_config = {"from_attributes": True}
+
+
+class CrawlerHealthStatus(BaseModel):
+    """Overall health status of the crawler."""
+
+    status: str = Field(description="Health indicator: 'healthy' (green), 'degraded' (yellow), 'error' (red)")
+    last_run: CrawlerRunSummary | None = Field(description="Most recent crawler run")
+    next_scheduled_run: datetime | None = Field(description="Next scheduled crawl time")
+    total_target_pages: int = Field(description="Total number of monitored pages")
+    active_target_pages: int = Field(description="Number of actively monitored pages")

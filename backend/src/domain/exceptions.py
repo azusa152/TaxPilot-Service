@@ -13,3 +13,10 @@ class LlmCallError(TaxPilotError):
 
     def __init__(self, detail: str):
         super().__init__(status_code=502, error_code="LLM_CALL_FAILED", detail=detail)
+
+
+class NotFoundError(TaxPilotError):
+    """Raised when a requested resource is not found."""
+
+    def __init__(self, detail: str):
+        super().__init__(status_code=404, error_code="NOT_FOUND", detail=detail)

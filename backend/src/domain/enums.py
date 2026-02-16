@@ -19,3 +19,18 @@ class LlmProvider(StrEnum):
     GEMINI = "gemini"
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
+
+
+class CrawlerRunTrigger(StrEnum):
+    """How a crawler run was triggered."""
+
+    MANUAL = "MANUAL"
+    SCHEDULED = "SCHEDULED"
+
+
+class SnapshotStatus(StrEnum):
+    """Status of an individual page snapshot."""
+
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    TIMEOUT = "TIMEOUT"

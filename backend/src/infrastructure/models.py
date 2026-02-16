@@ -151,3 +151,67 @@ class LlmUsageLog(Base):
         Index("ix_llm_usage_logs_created_at", "created_at"),
         Index("ix_llm_usage_logs_evolution_run_id", "evolution_run_id"),
     )
+
+
+class NtaTargetPage(Base):
+    """Configurable list of NTA pages to monitor."""
+
+    __tablename__ = "nta_target_pages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    check_interval_hours: Mapped[int] = mapped_column(Integer, default=24)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    snapshots: Mapped[list["NtaPageSnapshot"]] = relationship(
+        back_populates="target_page", order_by="desc(NtaPageSnapshot.fetched_at)"
+    )
+
+
+class NtaCrawlerRun(Base):
+    """Records each crawler run (manual or scheduled)."""
+
+    __tablename__ = "nta_crawler_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    trigger: Mapped[str] = mapped_column(String(20), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    pages_checked: Mapped[int] = mapped_column(Integer, default=0)
+    pages_changed: Mapped[int] = mapped_column(Integer, default=0)
+    pages_failed: Mapped[int] = mapped_column(Integer, default=0)
+
+    __table_args__ = (Index("ix_nta_crawler_runs_started_at", "started_at"),)
+
+
+class NtaPageSnapshot(Base):
+    """Stores a point-in-time snapshot of an NTA page.
+
+    Crawl4AI CrawlResult provides raw_markdown and fit_markdown
+    for full and LLM-optimized markdown respectively.
+    """
+
+    __tablename__ = "nta_page_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    target_page_id: Mapped[int] = mapped_column(Integer, ForeignKey("nta_target_pages.id"), nullable=False)
+    crawler_run_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("nta_crawler_runs.id"), nullable=True)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    raw_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+    raw_markdown: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fit_markdown: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extracted_tables: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="SUCCESS")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    response_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    target_page: Mapped["NtaTargetPage"] = relationship(back_populates="snapshots")
+
+    __table_args__ = (
+        Index("ix_nta_snapshots_target_fetched", "target_page_id", "fetched_at"),
+        Index("ix_nta_snapshots_content_hash", "content_hash"),
+    )

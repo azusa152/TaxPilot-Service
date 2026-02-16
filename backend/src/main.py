@@ -8,6 +8,7 @@ from src.api.health_routes import router as health_router
 from src.api.income_routes import router as income_router
 from src.api.ingestion_routes import router as ingestion_router
 from src.api.llm_config_routes import router as llm_config_router
+from src.api.nta_routes import router as nta_router
 from src.api.profile_routes import router as profile_router
 from src.api.tax_routes import router as tax_router
 from src.api.user_routes import router as user_router
@@ -41,6 +42,7 @@ def create_app() -> FastAPI:
     application.include_router(ingestion_router)
     application.include_router(tax_router)
     application.include_router(llm_config_router)
+    application.include_router(nta_router)
     return application
 
 
