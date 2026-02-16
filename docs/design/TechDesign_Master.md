@@ -151,6 +151,20 @@ api/ ──────► application/ ──────► domain/
 | `income_entries` | `(user_id, payment_date)` | Composite |
 | `tax_profiles` | `(user_id, year)` | Unique Composite |
 | `algorithm_registry` | `(function_name, version)` | Unique Composite |
+| `llm_provider_configs` | `(provider, is_active)` | Composite |
+| `llm_usage_logs` | `(created_at)` | B-tree (for budget aggregation) |
+| `llm_usage_logs` | `(evolution_run_id)` | B-tree (FK lookup) |
+| `nta_page_snapshots` | `(target_page_id, crawled_at)` | Composite |
+| `nta_page_snapshots` | `(content_hash)` | B-tree (change detection) |
+| `nta_crawler_runs` | `(started_at)` | B-tree (history listing) |
+| `evolution_runs` | `(status)` | B-tree (pending review filter) |
+| `evolution_runs` | `(created_at)` | B-tree (history listing) |
+| `generation_attempts` | `(evolution_run_id)` | B-tree (FK lookup) |
+| `audit_logs` | `(entity_type, entity_id)` | Composite |
+| `audit_logs` | `(created_at)` | B-tree (history listing) |
+| `notification_logs` | `(event, created_at)` | Composite |
+| `notification_logs` | `(evolution_run_id)` | B-tree (FK lookup) |
+| `bootstrap_verification_reports` | `(function_name)` | B-tree |
 
 ---
 
@@ -176,6 +190,28 @@ api/ ──────► application/ ──────► domain/
 | 5 | GET | `/algorithms/{function_name}` | Get algorithm details |
 | 5 | POST | `/algorithms` | Register new algorithm |
 | 5 | PUT | `/algorithms/{id}/activate` | Activate an algorithm version |
+| 6A | PUT | `/admin/llm/config` | Create/update LLM provider config |
+| 6A | GET | `/admin/llm/config` | Get active LLM config (masked token) |
+| 6A | POST | `/admin/llm/test` | Test LLM connection |
+| 6A | GET | `/admin/llm/usage` | Get LLM usage summary |
+| 6B | POST | `/admin/nta/check` | Trigger NTA crawl |
+| 6B | GET | `/admin/nta/pages` | List target NTA pages |
+| 6B | POST | `/admin/nta/pages` | Add target NTA page |
+| 6B | PUT | `/admin/nta/pages/{id}` | Update target NTA page |
+| 6B | GET | `/admin/nta/snapshots/{id}` | Get snapshot details + markdown |
+| 6B | GET | `/admin/nta/health` | Crawler health status |
+| 6B | GET | `/admin/nta/runs` | List crawl runs |
+| 6-Pre | POST | `/admin/bootstrap/run` | Run bootstrap process |
+| 6-Pre | GET | `/admin/bootstrap/report` | Get verification report |
+| 6E | POST | `/admin/evolution/run` | Trigger evolution pipeline |
+| 6E | GET | `/admin/evolution/runs` | List evolution runs |
+| 6E | GET | `/admin/evolution/runs/{id}` | Get evolution run detail |
+| 6E | POST | `/admin/evolution/runs/{id}/review` | Submit review decision |
+| 6E | POST | `/admin/evolution/runs/{id}/rollback` | Rollback to previous version |
+| 6F | PUT | `/admin/notifications/config` | Create/update notification config |
+| 6F | GET | `/admin/notifications/config` | Get active notification config |
+| 6F | POST | `/admin/notifications/test` | Send test notification |
+| 6F | GET | `/admin/notifications/log` | Get notification log |
 
 ### 4.2 Response Envelope
 
