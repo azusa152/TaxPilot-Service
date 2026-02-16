@@ -22,8 +22,11 @@ TaxPilot is a deterministic tax logic engine consumed by external AI Agents and 
 # Copy environment variables
 cp .env.example .env
 
-# Start all services (FastAPI + PostgreSQL)
+# Start all services (FastAPI + PostgreSQL + Admin Dashboard)
 make start
+
+# In a separate terminal — apply database migrations
+make migrate-up
 
 # Verify
 curl http://localhost:8000/health
