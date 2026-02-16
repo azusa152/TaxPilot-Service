@@ -29,6 +29,16 @@ make start
 curl http://localhost:8000/health
 ```
 
+## Configuration
+
+All ports are configurable via `.env` to avoid conflicts when running alongside other services:
+
+| Variable | Default | Description |
+|---|---|---|
+| `POSTGRES_PORT` | `5432` | Host port for PostgreSQL |
+| `API_PORT` | `8000` | Host port for FastAPI |
+| `ADMIN_PORT` | `8501` | Host port for Streamlit admin dashboard |
+
 ## Development Commands
 
 | Command | Description |
