@@ -159,9 +159,19 @@ class EvolutionRun(Base):
         DateTime(timezone=True), nullable=True
     )
 
-    # TODO(Phase 6E): Add review_decision, rationale, modified_code,
-    # regeneration_hints, regeneration_count, max_regenerations fields
-    # for the admin review workflow.
+    # Review workflow fields (Phase 6E)
+    review_decision: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
+    modified_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    regeneration_hints: Mapped[str | None] = mapped_column(Text, nullable=True)
+    regeneration_count: Mapped[int] = mapped_column(Integer, default=0)
+    max_regenerations: Mapped[int] = mapped_column(Integer, default=3)
+    activated_algorithm_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("algorithm_registry.id"), nullable=True
+    )
+    schema_proposal_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("schema_change_proposals.id", use_alter=True), nullable=True
+    )
 
     __table_args__ = (
         Index("ix_evolution_runs_status", "status"),
@@ -340,4 +350,35 @@ class BootstrapVerificationReport(Base):
     __table_args__ = (
         Index("ix_bootstrap_verification_function", "function_name"),
         Index("ix_bootstrap_verification_snapshot", "nta_snapshot_id"),
+    )
+
+
+class AuditLog(Base):
+    """Immutable audit trail for all significant admin actions."""
+
+    __tablename__ = "audit_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    action: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # e.g., "ALGORITHM_ACTIVATED", "REVIEW_DECISION"
+    actor: Mapped[str] = mapped_column(
+        String(100), nullable=False
+    )  # admin username or "system"
+    target_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # e.g., "AlgorithmRegistry", "EvolutionRun"
+    target_id: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # ID of the affected entity
+    details: Mapped[dict | None] = mapped_column(
+        JSONB, nullable=True
+    )  # action-specific context
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index("ix_audit_logs_target", "target_type", "target_id"),
+        Index("ix_audit_logs_created_at", "created_at"),
     )

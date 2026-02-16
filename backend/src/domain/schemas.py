@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from src.domain.enums import IncomeType, LawChangeType, LlmProvider, VerificationStatus
+from src.domain.enums import IncomeType, LawChangeType, LlmProvider, ReviewDecision, VerificationStatus
 
 
 # --- User ---
@@ -394,3 +394,66 @@ class BootstrapReport(BaseModel):
         description="Per-function verification results"
     )
     bootstrap_completed_at: datetime
+
+
+# --- Phase 6E: Evolution Pipeline Review ---
+class ReviewRequest(BaseModel):
+    """Admin review decision for an evolution run."""
+
+    decision: ReviewDecision = Field(
+        description="Review decision: ACCEPT, MODIFY, REGENERATE, SKIP_PERMANENT, SKIP_MANUAL"
+    )
+    rationale: str = Field(
+        description="Reason for the decision (required for all decisions)"
+    )
+    modified_code: str | None = Field(
+        None,
+        description="Admin-provided code (required when decision=MODIFY)"
+    )
+    regeneration_hints: str | None = Field(
+        None,
+        description="Hints for the LLM to improve generation (optional, used when decision=REGENERATE)"
+    )
+    skip_reason: str | None = Field(
+        None,
+        description="Reason for skipping (optional, used when decision=SKIP_*)"
+    )
+
+
+class EvolutionRunDetail(BaseModel):
+    """Detailed view of an evolution run including generated artifacts."""
+
+    id: int
+    trigger: str
+    status: str
+    nta_snapshot_id: int | None
+    parsed_changes: dict | None
+    error_message: str | None
+    started_at: datetime
+    completed_at: datetime | None
+    review_decision: str | None
+    rationale: str | None
+    regeneration_count: int
+    max_regenerations: int
+    generation_attempts: list[dict] = Field(
+        default_factory=list,
+        description="All code generation attempts for this run"
+    )
+    schema_proposal: dict | None = Field(
+        None, description="Proposed schema changes (if any)"
+    )
+
+    model_config = {"from_attributes": True}
+
+
+class EvolutionRunSummary(BaseModel):
+    """Summary view of an evolution run for list endpoints."""
+
+    id: int
+    trigger: str
+    status: str
+    started_at: datetime
+    completed_at: datetime | None
+    review_decision: str | None
+
+    model_config = {"from_attributes": True}

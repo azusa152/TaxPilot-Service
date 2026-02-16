@@ -46,3 +46,17 @@ async def client(db_session: AsyncSession):
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def evolution_run(db_session):
+    """Create an evolution run for testing."""
+    from src.infrastructure.models import EvolutionRun
+
+    run = EvolutionRun(
+        trigger="MANUAL",
+        status="PENDING",
+    )
+    db_session.add(run)
+    await db_session.flush()
+    return run

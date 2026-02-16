@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.bootstrap_routes import router as bootstrap_router
 from src.api.error_handlers import register_error_handlers
+from src.api.evolution_routes import router as evolution_router
 from src.api.health_routes import router as health_router
 from src.api.income_routes import router as income_router
 from src.api.ingestion_routes import router as ingestion_router
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
     application.include_router(llm_config_router)
     application.include_router(nta_router)
     application.include_router(bootstrap_router)
+    application.include_router(evolution_router)
     return application
 
 

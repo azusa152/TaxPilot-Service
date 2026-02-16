@@ -78,3 +78,13 @@ class LawChangeType(StrEnum):
     BRACKET_CHANGE = "BRACKET_CHANGE"
     FORMULA_CHANGE = "FORMULA_CHANGE"
     REGULATION_REMOVED = "REGULATION_REMOVED"
+
+
+class ReviewDecision(StrEnum):
+    """Admin's review decision for a generated formula."""
+
+    ACCEPT = "ACCEPT"
+    MODIFY = "MODIFY"
+    REGENERATE = "REGENERATE"
+    SKIP_PERMANENT = "SKIP_PERMANENT"
+    SKIP_MANUAL = "SKIP_MANUAL"
