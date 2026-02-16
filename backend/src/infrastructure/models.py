@@ -382,3 +382,58 @@ class AuditLog(Base):
         Index("ix_audit_logs_target", "target_type", "target_id"),
         Index("ix_audit_logs_created_at", "created_at"),
     )
+
+
+class NotificationConfig(Base):
+    """Persists notification settings (SMTP config and preferences)."""
+
+    __tablename__ = "notification_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    smtp_host: Mapped[str] = mapped_column(String(200), nullable=False)
+    smtp_port: Mapped[int] = mapped_column(Integer, default=587)
+    smtp_user: Mapped[str] = mapped_column(String(200), nullable=False)
+    encrypted_smtp_password: Mapped[str] = mapped_column(
+        Text, nullable=False
+    )  # Encrypted via Fernet (same as LLM tokens)
+    sender_email: Mapped[str] = mapped_column(String(200), nullable=False)
+    recipient_emails: Mapped[list] = mapped_column(
+        JSONB, nullable=False
+    )  # ["admin1@example.com", "admin2@example.com"]
+    enabled_events: Mapped[list] = mapped_column(
+        JSONB, nullable=False
+    )  # ["REGULATION_CHANGE_DETECTED", "FORMULA_READY_FOR_REVIEW", ...]
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class NotificationLog(Base):
+    """Records every notification attempt."""
+
+    __tablename__ = "notification_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event: Mapped[str] = mapped_column(String(50), nullable=False)
+    recipient_emails: Mapped[list] = mapped_column(
+        JSONB, nullable=False
+    )  # List of email addresses
+    subject: Mapped[str] = mapped_column(String(500), nullable=False)
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    evolution_run_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("evolution_runs.id"), nullable=True
+    )
+    sent_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index("ix_notification_logs_event_sent", "event", "sent_at"),
+        Index("ix_notification_logs_evolution_run_id", "evolution_run_id"),
+    )

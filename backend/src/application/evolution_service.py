@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.notification_manager import NotificationManager
 from src.domain.enums import AlgorithmStatus, EvolutionRunStatus, LawChangeType, ReviewDecision
 from src.domain.schemas import LawChange, ReviewRequest
 from src.infrastructure.code_generator import CodeGenerator
@@ -37,6 +38,7 @@ class EvolutionPipeline:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.notifier = NotificationManager(db)
 
     async def start_run(
         self, trigger: str = "MANUAL", snapshot_id: int | None = None
@@ -147,11 +149,29 @@ class EvolutionPipeline:
             run.status = EvolutionRunStatus.AWAITING_REVIEW
             await self.db.flush()
 
+            # Notify: formula ready for review
+            function_name = self._get_affected_function_name(run)
+            change_summary = self._get_change_summary(run)
+            await self.notifier.notify_formula_ready_for_review(
+                run_id=run.id,
+                function_name=function_name,
+                change_summary=change_summary,
+                dashboard_url=f"/admin/evolution/runs/{run.id}",
+            )
+
         except Exception as e:
             run.status = EvolutionRunStatus.FAILED
             run.error_message = str(e)
             run.completed_at = datetime.now(timezone.utc)
             logger.exception(f"Evolution run {run.id} failed: {e}")
+
+            # Notify: run failed
+            await self.notifier.notify_run_failed(
+                run_id=run.id,
+                failed_step=run.status.value,
+                error=str(e),
+                dashboard_url=f"/admin/evolution/runs/{run.id}",
+            )
 
         await self.db.flush()
         return run
@@ -229,6 +249,17 @@ class EvolutionPipeline:
             {"rationale": run.rationale},
         )
 
+        # Notify: formula activated
+        function_name = self._get_affected_function_name(run)
+        algo = await self.db.get(AlgorithmRegistry, run.activated_algorithm_id)
+        await self.notifier.notify_formula_activated(
+            run_id=run.id,
+            function_name=function_name,
+            version=str(algo.id) if algo else "unknown",
+            decision="ACCEPT",
+            dashboard_url=f"/admin/evolution/runs/{run.id}",
+        )
+
     async def _handle_modify(
         self, run: EvolutionRun, modified_code: str, actor: str
     ) -> None:
@@ -271,6 +302,17 @@ class EvolutionPipeline:
         await self._log_audit(
             "REVIEW_MODIFIED", actor, "EvolutionRun", str(run.id),
             {"rationale": run.rationale, "code_modified": True},
+        )
+
+        # Notify: formula activated (with modifications)
+        function_name = self._get_affected_function_name(run)
+        algo = await self.db.get(AlgorithmRegistry, run.activated_algorithm_id)
+        await self.notifier.notify_formula_activated(
+            run_id=run.id,
+            function_name=function_name,
+            version=str(algo.id) if algo else "unknown",
+            decision="MODIFY",
+            dashboard_url=f"/admin/evolution/runs/{run.id}",
         )
 
     async def _handle_regenerate(
@@ -320,6 +362,15 @@ class EvolutionPipeline:
             )
 
         run.status = EvolutionRunStatus.AWAITING_REVIEW
+
+        # Notify: formula regenerating
+        await self.notifier.notify_formula_regenerating(
+            run_id=run.id,
+            attempt=run.regeneration_count,
+            max_attempts=run.max_regenerations,
+            hints=hints,
+            dashboard_url=f"/admin/evolution/runs/{run.id}",
+        )
 
     async def rollback(self, run_id: int, actor: str = "admin") -> None:
         """Rollback to the previous algorithm version.
@@ -411,6 +462,28 @@ class EvolutionPipeline:
             raise ValueError("No affected_function in parsed changes")
 
         return function_name
+
+    def _get_change_summary(self, run: EvolutionRun) -> str:
+        """Generate a brief summary of the law changes for notification.
+
+        Args:
+            run: EvolutionRun with parsed_changes
+
+        Returns:
+            Summary string like "2024 threshold update (¥2M → ¥2.4M)"
+        """
+        changes = run.parsed_changes.get("changes", []) if run.parsed_changes else []
+        if not changes:
+            return "Unknown change"
+
+        first_change = changes[0]
+        change_type = first_change.get("change_type", "UNKNOWN")
+        summary = first_change.get("summary", "")
+
+        if len(changes) == 1:
+            return f"{change_type}: {summary}"
+        else:
+            return f"{change_type}: {summary} (+{len(changes) - 1} more)"
 
     async def _activate_draft_algorithm(
         self, run: EvolutionRun, actor: str

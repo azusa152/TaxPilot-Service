@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from src.domain.enums import IncomeType, LawChangeType, LlmProvider, ReviewDecision, VerificationStatus
+from src.domain.enums import IncomeType, LawChangeType, LlmProvider, NotificationEvent, ReviewDecision, VerificationStatus
 
 
 # --- User ---
@@ -455,5 +455,58 @@ class EvolutionRunSummary(BaseModel):
     started_at: datetime
     completed_at: datetime | None
     review_decision: str | None
+
+    model_config = {"from_attributes": True}
+
+
+# --- Phase 6F: Notifications ---
+class NotificationConfigSchema(BaseModel):
+    """Schema for notification configuration."""
+
+    smtp_host: str = Field(description="SMTP server hostname")
+    smtp_port: int = Field(default=587, description="SMTP port (587 for TLS)")
+    smtp_user: str = Field(description="SMTP username")
+    smtp_password: str = Field(
+        description="SMTP password (will be encrypted at rest)"
+    )
+    sender_email: str = Field(description="From email address")
+    recipient_emails: list[str] = Field(
+        description="List of recipient email addresses"
+    )
+    enabled_events: list[NotificationEvent] = Field(
+        description="List of NotificationEvent values to enable"
+    )
+
+
+class NotificationConfigResponse(BaseModel):
+    """Response schema for notification config (password masked)."""
+
+    id: int
+    smtp_host: str
+    smtp_port: int
+    smtp_user: str
+    masked_password: str = Field(description="Masked SMTP password")
+    sender_email: str
+    recipient_emails: list[str]
+    enabled_events: list[str]
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class NotificationLogEntry(BaseModel):
+    """A single notification log entry."""
+
+    id: int
+    event: str
+    recipient_emails: list[str]
+    subject: str
+    success: bool
+    error_message: str | None
+    retry_count: int
+    evolution_run_id: int | None
+    sent_at: datetime
 
     model_config = {"from_attributes": True}

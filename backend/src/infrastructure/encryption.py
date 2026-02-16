@@ -35,6 +35,16 @@ def decrypt_token(encrypted: str) -> str:
     return _get_fernet().decrypt(encrypted.encode()).decode()
 
 
+def encrypt_value(value: str) -> str:
+    """Encrypt a generic string value for storage (e.g., SMTP password)."""
+    return _get_fernet().encrypt(value.encode()).decode()
+
+
+def decrypt_value(encrypted: str) -> str:
+    """Decrypt a generic string value for use (e.g., SMTP password)."""
+    return _get_fernet().decrypt(encrypted.encode()).decode()
+
+
 def mask_token(token: str) -> str:
     """Mask a token for display (e.g., 'sk-...a3f2')."""
     if len(token) <= 8:

@@ -1,13 +1,17 @@
 """Periodic crawler scheduling using APScheduler.
 
 Runs the NTA crawler at configurable intervals to detect regulation changes.
+Also runs weekly deferred reminder notifications.
 """
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from src.application.notification_manager import NotificationManager
 from src.config import settings
-from src.domain.enums import CrawlerRunTrigger
+from src.domain.enums import CrawlerRunTrigger, EvolutionRunStatus
+from src.infrastructure.models import EvolutionRun
 from src.infrastructure.nta_monitor import NtaMonitor
 from src.logging_config import get_logger
 
@@ -39,8 +43,70 @@ async def scheduled_crawl() -> None:
             logger.exception("Scheduled crawl failed")
 
 
+async def scheduled_deferred_reminder() -> None:
+    """Weekly deferred reminder job triggered by APScheduler."""
+    if _session_factory is None:
+        logger.error("Scheduler session factory not initialized")
+        return
+
+    async with _session_factory() as db:
+        try:
+            # Query all deferred runs
+            result = await db.execute(
+                select(EvolutionRun)
+                .where(EvolutionRun.status == EvolutionRunStatus.DEFERRED)
+                .order_by(EvolutionRun.started_at.desc())
+            )
+            deferred_runs = result.scalars().all()
+
+            if not deferred_runs:
+                logger.info("No deferred runs to remind about")
+                return
+
+            # Format deferred runs for email template
+            deferred_list = [
+                {
+                    "id": run.id,
+                    "summary": _get_run_summary(run),
+                    "date": run.completed_at.strftime("%Y-%m-%d") if run.completed_at else "N/A",
+                }
+                for run in deferred_runs
+            ]
+
+            # Send reminder notification
+            notifier = NotificationManager(db)
+            await notifier.notify_deferred_reminder(
+                deferred_count=len(deferred_runs),
+                deferred_runs=deferred_list,
+                dashboard_url="/admin/evolution/deferred",
+            )
+
+            logger.info(f"Sent deferred reminder for {len(deferred_runs)} run(s)")
+
+        except Exception:
+            logger.exception("Scheduled deferred reminder failed")
+
+
+def _get_run_summary(run: EvolutionRun) -> str:
+    """Extract a brief summary from a run's parsed changes.
+
+    Args:
+        run: EvolutionRun with parsed_changes
+
+    Returns:
+        Summary string or "Unknown change"
+    """
+    changes = run.parsed_changes.get("changes", []) if run.parsed_changes else []
+    if not changes:
+        return "Unknown change"
+
+    first_change = changes[0]
+    summary = first_change.get("summary", "")
+    return summary or "Unknown change"
+
+
 def start_scheduler(session_factory: async_sessionmaker[AsyncSession]) -> None:
-    """Start the periodic crawler scheduler.
+    """Start the periodic crawler and notification schedulers.
 
     Args:
         session_factory: SQLAlchemy async session factory for DB access.
@@ -48,8 +114,8 @@ def start_scheduler(session_factory: async_sessionmaker[AsyncSession]) -> None:
     global _session_factory
     _session_factory = session_factory
 
+    # NTA crawler job
     interval_hours = settings.nta_crawl_interval_hours
-
     scheduler.add_job(
         scheduled_crawl,
         "interval",
@@ -57,8 +123,21 @@ def start_scheduler(session_factory: async_sessionmaker[AsyncSession]) -> None:
         id="nta_crawler",
         replace_existing=True,
     )
-    scheduler.start()
     logger.info(f"NTA crawler scheduler started: every {interval_hours} hour(s)")
+
+    # Deferred reminder job (weekly on Monday at 9:00 AM)
+    scheduler.add_job(
+        scheduled_deferred_reminder,
+        "cron",
+        day_of_week="mon",
+        hour=9,
+        minute=0,
+        id="deferred_reminder",
+        replace_existing=True,
+    )
+    logger.info("Deferred reminder scheduler started: every Monday at 9:00 AM")
+
+    scheduler.start()
 
 
 def stop_scheduler() -> None:

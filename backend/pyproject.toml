@@ -18,6 +18,7 @@ dependencies = [
     "crawl4ai>=0.7.8",
     "apscheduler>=3.10.0",
     "RestrictedPython>=8.1",
+    "aiosmtplib>=3.0.0",
 ]
 
 [project.optional-dependencies]

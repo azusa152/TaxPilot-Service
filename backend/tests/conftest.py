@@ -1,7 +1,9 @@
 import pytest
+from cryptography.fernet import Fernet
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from unittest.mock import patch
 
 from src.config import settings
 from src.infrastructure.database import get_db
@@ -25,6 +27,12 @@ async def db_session():
         await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
+
+
+@pytest.fixture(scope="function")
+async def db(db_session):
+    """Alias for db_session for consistency."""
+    return db_session
 
 
 @pytest.fixture(scope="function")
@@ -60,3 +68,11 @@ async def evolution_run(db_session):
     db_session.add(run)
     await db_session.flush()
     return run
+
+
+@pytest.fixture(autouse=True)
+def mock_encryption_key():
+    """Auto-mock LLM_ENCRYPTION_KEY for all tests."""
+    with patch("src.infrastructure.encryption.settings") as mock_settings:
+        mock_settings.llm_encryption_key = Fernet.generate_key().decode()
+        yield mock_settings
