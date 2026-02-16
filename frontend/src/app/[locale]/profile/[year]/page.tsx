@@ -9,6 +9,7 @@ import {
   getTaxProfile,
   updateTaxProfile,
   getProfileDefinition,
+  ApiError,
   type ProfileDefinitionResponse,
   type SchemaDefinition,
 } from "@/lib/api-client";
@@ -81,7 +82,7 @@ function ProfileFormContent() {
         def = await getProfileDefinition(year);
       } catch (err) {
         // 404 is expected — just means no dynamic fields for this year
-        if (err instanceof Error && !err.message.includes("404")) {
+        if (!(err instanceof ApiError && err.status === 404)) {
           throw err;
         }
       }
@@ -98,7 +99,7 @@ function ProfileFormContent() {
         setAdditionalAttributes(profile.additional_attributes);
       } catch (err) {
         // 404 is expected — show empty form for creation
-        if (err instanceof Error && !err.message.includes("404")) {
+        if (!(err instanceof ApiError && err.status === 404)) {
           throw err;
         }
         setIsNewProfile(true);

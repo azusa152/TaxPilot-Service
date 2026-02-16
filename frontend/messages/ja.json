@@ -110,5 +110,28 @@
       "dependentsNonNegative": "扶養家族の人数は0以上を入力してください",
       "amountNonNegative": "金額は0以上を入力してください"
     }
+  },
+  "upload": {
+    "title": "書類アップロード",
+    "instruction": "ファイルをここにドラッグ＆ドロップするか、クリックして選択してください。",
+    "supportedFormats": "対応形式: PDF、Excel（.xlsx、.xls）、画像（PNG、JPG、GIF、BMP、TIFF）",
+    "browse": "ファイルを選択",
+    "processing": "書類を処理中…",
+    "success": "書類の処理が完了しました。収入データが作成されました。",
+    "viewAllEntries": "収入一覧を表示",
+    "uploadAnother": "別のファイルをアップロード",
+    "result": {
+      "title": "抽出データ",
+      "sourceFile": "ファイル名",
+      "incomeType": "収入種別",
+      "grossAmount": "総支給額",
+      "paymentDate": "支払日",
+      "pending": "抽出待ち"
+    },
+    "error": {
+      "unsupportedType": "対応していないファイル形式です。PDF、Excel、画像ファイルをアップロードしてください。",
+      "uploadFailed": "アップロードに失敗しました。再度お試しください。",
+      "tooLarge": "ファイルが大きすぎます。小さいファイルをアップロードしてください。"
+    }
   }
 }

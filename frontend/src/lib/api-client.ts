@@ -101,6 +101,30 @@ export interface ProfileDefinitionResponse {
 }
 
 // ---------------------------------------------------------------------------
+// Error class
+// ---------------------------------------------------------------------------
+
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly errorCode: string,
+    public readonly detail: string,
+  ) {
+    super(`API error ${status}: ${errorCode || "UNKNOWN"}${detail ? ` - ${detail}` : ""}`);
+    this.name = "ApiError";
+  }
+}
+
+async function throwApiError(res: Response): Promise<never> {
+  const body = await res.json().catch(() => null);
+  throw new ApiError(
+    res.status,
+    body?.error_code ?? "",
+    body?.detail ?? res.statusText,
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Transport helpers
 // ---------------------------------------------------------------------------
 
@@ -121,7 +145,7 @@ export async function serverRequest<T>(
   });
 
   if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${res.statusText}`);
+    await throwApiError(res);
   }
 
   return res.json() as Promise<T>;
@@ -144,7 +168,7 @@ export async function clientRequest<T>(
   });
 
   if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${res.statusText}`);
+    await throwApiError(res);
   }
 
   return res.json() as Promise<T>;
@@ -211,7 +235,7 @@ export async function deleteIncomeEntry(
     method: "DELETE",
   });
   if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${res.statusText}`);
+    await throwApiError(res);
   }
 }
 
@@ -243,4 +267,52 @@ export async function getProfileDefinition(
   return clientRequest<ProfileDefinitionResponse>(
     `/profile-definition/${year}`,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Document Ingestion
+// ---------------------------------------------------------------------------
+
+export const SUPPORTED_FILE_TYPES = [
+  ".pdf",
+  ".xlsx",
+  ".xls",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".bmp",
+  ".tiff",
+] as const;
+
+export const ACCEPTED_MIME_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/bmp",
+  "image/tiff",
+].join(",");
+
+export async function uploadDocument(
+  userId: string,
+  file: File,
+): Promise<IncomeEntryResponse> {
+  const formData = new FormData();
+  formData.append("user_id", userId);
+  formData.append("file", file);
+
+  const res = await fetch("/api/ingestion/upload", {
+    method: "POST",
+    body: formData,
+    // Do not set Content-Type — browser auto-sets multipart boundary
+  });
+
+  if (!res.ok) {
+    await throwApiError(res);
+  }
+
+  return res.json() as Promise<IncomeEntryResponse>;
 }

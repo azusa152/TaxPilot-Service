@@ -110,5 +110,28 @@
       "dependentsNonNegative": "Number of dependents cannot be negative",
       "amountNonNegative": "Amount cannot be negative"
     }
+  },
+  "upload": {
+    "title": "Upload Documents",
+    "instruction": "Drag and drop a financial document here, or click to browse.",
+    "supportedFormats": "Supported formats: PDF, Excel (.xlsx, .xls), Images (PNG, JPG, GIF, BMP, TIFF)",
+    "browse": "Browse Files",
+    "processing": "Processing document…",
+    "success": "Document processed successfully. An income entry has been created.",
+    "viewAllEntries": "View All Income Entries",
+    "uploadAnother": "Upload Another",
+    "result": {
+      "title": "Extracted Data",
+      "sourceFile": "Source File",
+      "incomeType": "Income Type",
+      "grossAmount": "Gross Amount",
+      "paymentDate": "Payment Date",
+      "pending": "Pending extraction"
+    },
+    "error": {
+      "unsupportedType": "Unsupported file type. Please upload a PDF, Excel, or image file.",
+      "uploadFailed": "Failed to upload document. Please try again.",
+      "tooLarge": "File is too large. Please upload a smaller file."
+    }
   }
 }

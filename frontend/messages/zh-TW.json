@@ -110,5 +110,28 @@
       "dependentsNonNegative": "扶養人數不可為負數",
       "amountNonNegative": "金額不可為負數"
     }
+  },
+  "upload": {
+    "title": "上傳文件",
+    "instruction": "將文件拖放到此處，或點擊瀏覽。",
+    "supportedFormats": "支援格式：PDF、Excel（.xlsx、.xls）、圖片（PNG、JPG、GIF、BMP、TIFF）",
+    "browse": "瀏覽檔案",
+    "processing": "處理文件中…",
+    "success": "文件處理成功。已建立收入項目。",
+    "viewAllEntries": "查看所有收入項目",
+    "uploadAnother": "上傳其他文件",
+    "result": {
+      "title": "擷取資料",
+      "sourceFile": "檔案名稱",
+      "incomeType": "收入類型",
+      "grossAmount": "總額",
+      "paymentDate": "支付日期",
+      "pending": "待擷取"
+    },
+    "error": {
+      "unsupportedType": "不支援的檔案格式。請上傳 PDF、Excel 或圖片檔案。",
+      "uploadFailed": "上傳失敗。請重試。",
+      "tooLarge": "檔案過大。請上傳較小的檔案。"
+    }
   }
 }
