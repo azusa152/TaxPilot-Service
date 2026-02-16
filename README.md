@@ -11,6 +11,11 @@ TaxPilot is a deterministic tax logic engine consumed by external AI Agents and 
 - **Framework:** FastAPI (Async)
 - **Database:** PostgreSQL 15+ (SQLAlchemy 2.0 Async + Alembic)
 - **Ingestion:** microsoft/markitdown
+- **LLM Integration:** LiteLLM (multi-provider), RestrictedPython (code sandbox)
+- **Web Crawling:** Crawl4AI (async, AI-optimized)
+- **Notifications:** aiosmtplib (async SMTP)
+- **Scheduling:** APScheduler
+- **Encryption:** cryptography (Fernet)
 
 ### Frontend
 - **Framework:** Next.js 14 (App Router)
@@ -127,6 +132,62 @@ docker-compose run --rm api pytest tests/domain/ -v
 ```
 
 See [.cursor/rules/testing-policy.md](.cursor/rules/testing-policy.md) for the full testing policy.
+
+## Evolution Loop (Self-Evolving Tax Logic)
+
+TaxPilot includes a **self-evolving pipeline** that monitors Japanese tax law changes and automatically generates updated calculation formulas for admin review. The system is built as a series of composable phases:
+
+| Phase | Component | Description |
+|-------|-----------|-------------|
+| 6-Pre | **Bootstrap & Verification** | Cold-start: seeds the AlgorithmRegistry with existing formulas, crawls baseline NTA pages, and uses LLM to verify formula accuracy |
+| 6A | **LLM Gateway** | Unified LLM access via LiteLLM (OpenAI, Gemini, Claude). API tokens encrypted at rest with Fernet. Budget tracking and structured output via Pydantic |
+| 6B | **NTA Crawler** | Async crawler (Crawl4AI) monitors National Tax Agency pages for content changes. Stores parsed Markdown snapshots with content hashing for change detection |
+| 6C | **Regulation Parser** | LLM-powered analysis of NTA content diffs to identify specific law changes (thresholds, rates, brackets, new deductions) |
+| 6D | **Code & Schema Generator** | Generates updated Python calculation functions and ProfileDefinition schema proposals from parsed law changes. Code validated via RestrictedPython sandbox |
+| 6E | **Pipeline Orchestration & Admin Review** | End-to-end workflow from detection to activation. 4-option admin review: Accept, Modify, Regenerate (with hints), or Skip. Rollback support and audit logging |
+| 6F | **Email Notifications** | Pluggable notification system (SMTP for MVP). Alerts admin on regulation changes, formulas ready for review, activations, failures, and weekly deferred reminders |
+
+Design documents: [docs/design/evolution-loop/](docs/design/evolution-loop/)
+
+### Evolution Loop Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `LLM_PROVIDER` | `openai` | LLM provider (openai, gemini, claude) |
+| `LLM_MODEL` | `openai/gpt-4o` | LiteLLM model identifier |
+| `LLM_API_TOKEN` | *(empty)* | LLM API key (encrypted at rest) |
+| `LLM_ENCRYPTION_KEY` | *(empty)* | Fernet key for encrypting secrets |
+| `LLM_MONTHLY_BUDGET_USD` | `50.00` | Monthly LLM spending limit |
+| `NTA_CRAWL_INTERVAL_HOURS` | `24` | Hours between NTA crawl cycles |
+| `NTA_CRAWL_RATE_LIMIT_SECONDS` | `2` | Delay between page fetches |
+
+SMTP notifications are configured via the admin dashboard (`PUT /admin/notifications/config`) or the Streamlit UI. SMTP passwords are encrypted using the same Fernet key as LLM tokens.
+
+### Notification Events
+
+| Event | Trigger | Priority |
+|-------|---------|----------|
+| `REGULATION_CHANGE_DETECTED` | NTA crawler detects a page change | High (retry) |
+| `FORMULA_READY_FOR_REVIEW` | Pipeline generates code, enters awaiting review | High (retry) |
+| `FORMULA_ACTIVATED` | Admin accepts/modifies and activates a formula | Medium |
+| `FORMULA_REGENERATING` | Admin requests LLM regeneration | Low |
+| `RUN_FAILED` | Pipeline fails at any step | High (retry) |
+| `DEFERRED_REMINDER` | Weekly digest of deferred regulation updates | Medium |
+
+### Evolution Loop API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/admin/evolution/run` | Trigger a new evolution pipeline run |
+| `GET` | `/admin/evolution/runs` | List evolution runs with filters |
+| `GET` | `/admin/evolution/runs/{id}` | Get detailed run information |
+| `POST` | `/admin/evolution/runs/{id}/review` | Submit admin review decision |
+| `POST` | `/admin/evolution/runs/{id}/rollback` | Rollback to previous algorithm version |
+| `POST` | `/admin/notifications/config` | Create or update SMTP notification config |
+| `GET` | `/admin/notifications/config` | Get active notification config (password masked) |
+| `DELETE` | `/admin/notifications/config` | Disable notification config |
+| `GET` | `/admin/notifications/logs` | List notification history with filters |
+| `GET` | `/admin/notifications/logs/stats` | Get notification delivery statistics |
 
 ## Architecture
 
