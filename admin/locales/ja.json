@@ -79,6 +79,23 @@
   },
   "crawler": {
     "title": "3層クローラー監視",
+    "dashboard": {
+      "title": "統合ステータスダッシュボード",
+      "status": "ステータス",
+      "progress": "進捗",
+      "elapsed": "経過時間",
+      "completed": "完了",
+      "failed": "失敗",
+      "changed": "変更",
+      "runAllButton": "全クローラーを実行（バックグラウンド）",
+      "fetchError": "進捗の取得に失敗: {error}",
+      "startFailed": "クローラーの開始に失敗: {error}"
+    },
+    "progress": {
+      "title": "リアルタイム進捗",
+      "runBackground": "今すぐ実行（バックグラウンド）",
+      "startFailed": "開始に失敗: {error}"
+    },
     "layers": {
       "ntaTaxAnswer": "レイヤー1: NTA税務相談",
       "mofTaxReform": "レイヤー2: 財務省税制改正",

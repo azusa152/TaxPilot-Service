@@ -3,19 +3,24 @@
 Orchestrates crawl triggers, snapshot queries, target page CRUD, and health status.
 """
 
+import asyncio
+from typing import Literal
+
 from sqlalchemy import func as sqla_func
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.domain.enums import CrawlerRunTrigger
 from src.domain.exceptions import NotFoundError
 from src.domain.schemas import (
     CrawlerHealthStatus,
+    CrawlerProgressResponse,
     CrawlerRunSummary,
     NtaPageChange,
     NtaSnapshotDetail,
     NtaTargetPageConfig,
 )
+from src.infrastructure.crawler_progress import get_progress_tracker
 from src.infrastructure.egov_law_client import EgovLawClient
 from src.infrastructure.models import NtaCrawlerRun, NtaPageSnapshot, NtaTargetPage
 from src.infrastructure.mof_reform_monitor import MofReformMonitor
@@ -261,3 +266,70 @@ async def list_crawler_runs(db: AsyncSession, limit: int = 20) -> list[CrawlerRu
         )
         for run in runs
     ]
+
+
+# --- Background Crawl Orchestration ---
+
+
+async def start_background_crawl(
+    session_factory: async_sessionmaker[AsyncSession],
+    layer: Literal["nta", "mof", "egov", "all"],
+    trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL,
+) -> dict[str, str]:
+    """Start a crawler layer in the background.
+
+    Args:
+        session_factory: Async session factory for DB access.
+        layer: Layer to crawl ('nta', 'mof', 'egov', or 'all').
+        trigger: Trigger type (MANUAL or SCHEDULED).
+
+    Returns:
+        Dict with 'status' and 'message' keys.
+    """
+    progress_tracker = get_progress_tracker()
+
+    async def run_crawl() -> None:
+        """Background task to run the crawler."""
+        async with session_factory() as db:
+            try:
+                if layer == "nta":
+                    monitor = NtaMonitor(db, progress_tracker=progress_tracker)
+                    await monitor.check_for_changes(trigger=trigger)
+                elif layer == "mof":
+                    monitor = MofReformMonitor(db, progress_tracker=progress_tracker)
+                    await monitor.check_for_changes(trigger=trigger)
+                elif layer == "egov":
+                    client = EgovLawClient(db, progress_tracker=progress_tracker)
+                    await client.check_for_changes(trigger=trigger)
+                elif layer == "all":
+                    nta_monitor = NtaMonitor(db, progress_tracker=progress_tracker)
+                    await nta_monitor.check_for_changes(trigger=trigger)
+                    await db.commit()
+
+                    mof_monitor = MofReformMonitor(db, progress_tracker=progress_tracker)
+                    await mof_monitor.check_for_changes(trigger=trigger)
+                    await db.commit()
+
+                    egov_client = EgovLawClient(db, progress_tracker=progress_tracker)
+                    await egov_client.check_for_changes(trigger=trigger)
+
+                await db.commit()
+                logger.info(f"Background crawl completed for layer: {layer}")
+            except Exception:
+                await db.rollback()
+                logger.exception(f"Background crawl failed for layer: {layer}")
+
+    # Start background task
+    asyncio.create_task(run_crawl())
+
+    return {"status": "STARTED", "message": f"Crawler for layer '{layer}' started in background"}
+
+
+async def get_crawler_progress() -> CrawlerProgressResponse:
+    """Get current crawler progress for all layers.
+
+    Returns:
+        CrawlerProgressResponse with all layer states.
+    """
+    progress_tracker = get_progress_tracker()
+    return await progress_tracker.get_progress()

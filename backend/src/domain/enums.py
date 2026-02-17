@@ -107,3 +107,21 @@ class CrawlerSourceType(StrEnum):
     NTA_TAX_ANSWER = "NTA_TAX_ANSWER"
     MOF_TAX_REFORM = "MOF_TAX_REFORM"
     EGOV_LAW = "EGOV_LAW"
+
+
+class CrawlPageStatus(StrEnum):
+    """Status of an individual page being crawled."""
+
+    PENDING = "PENDING"
+    CRAWLING = "CRAWLING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+
+
+class CrawlLayerStatus(StrEnum):
+    """Status of a crawler layer (NTA, MOF, e-Gov)."""
+
+    IDLE = "IDLE"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"

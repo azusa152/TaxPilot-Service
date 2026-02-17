@@ -1,15 +1,19 @@
 """Admin API routes for NTA crawler management."""
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.nta_service import (
+    get_crawler_progress,
     get_health_status,
     get_snapshot_detail,
     get_snapshot_markdown,
     list_crawler_runs,
     list_snapshots,
     list_target_pages,
+    start_background_crawl,
     trigger_all_crawls,
     trigger_crawl,
     trigger_egov_crawl,
@@ -19,12 +23,13 @@ from src.application.nta_service import (
 from src.domain.enums import CrawlerRunTrigger
 from src.domain.schemas import (
     CrawlerHealthStatus,
+    CrawlerProgressResponse,
     CrawlerRunSummary,
     NtaPageChange,
     NtaSnapshotDetail,
     NtaTargetPageConfig,
 )
-from src.infrastructure.database import get_db
+from src.infrastructure.database import get_db, get_session_factory
 
 router = APIRouter(prefix="/admin/nta", tags=["Admin - NTA Crawler"])
 
@@ -139,3 +144,28 @@ async def put_target(config: NtaTargetPageConfig, db: AsyncSession = Depends(get
 )
 async def get_runs(db: AsyncSession = Depends(get_db)):
     return await list_crawler_runs(db)
+
+
+@router.post(
+    "/start-crawl",
+    summary="Start a crawler layer in background",
+)
+async def start_crawl(
+    layer: Literal["nta", "mof", "egov", "all"] = Query(..., description="Layer to crawl: 'nta', 'mof', 'egov', or 'all'"),
+    session_factory=Depends(get_session_factory),
+):
+    """Start a crawler layer as a background task.
+
+    Returns immediately with status 'STARTED'. Use GET /admin/nta/progress to monitor.
+    """
+    return await start_background_crawl(session_factory, layer, trigger=CrawlerRunTrigger.MANUAL)
+
+
+@router.get(
+    "/progress",
+    response_model=CrawlerProgressResponse,
+    summary="Get real-time crawler progress",
+)
+async def get_progress():
+    """Get current progress for all three crawler layers."""
+    return await get_crawler_progress()

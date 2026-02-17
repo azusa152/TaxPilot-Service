@@ -16,13 +16,19 @@ from bs4 import BeautifulSoup
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.enums import CrawlerRunTrigger, CrawlerSourceType, SnapshotStatus
+from src.domain.enums import CrawlPageStatus, CrawlerRunTrigger, CrawlerSourceType, SnapshotStatus
 from src.domain.schemas import NtaPageChange
 from src.infrastructure.markitdown_adapter import MarkItDownAdapter
 from src.infrastructure.models import NtaCrawlerRun, NtaPageSnapshot, NtaTargetPage
 from src.logging_config import get_logger
 
 logger = get_logger(__name__)
+
+# Avoid circular import by making progress tracker optional
+try:
+    from src.infrastructure.crawler_progress import CrawlerProgressTracker
+except ImportError:
+    CrawlerProgressTracker = None  # type: ignore
 
 
 class MofReformMonitor:
@@ -32,9 +38,10 @@ class MofReformMonitor:
     to convert PDFs to Markdown. Detects changes by hashing the list of PDF links.
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, progress_tracker: "CrawlerProgressTracker | None" = None):
         self.db = db
         self.markitdown = MarkItDownAdapter()
+        self.progress_tracker = progress_tracker
 
     async def check_for_changes(self, trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL) -> list[NtaPageChange]:
         """Crawl MOF Tax Reform outline page and detect changes.
@@ -64,24 +71,62 @@ class MofReformMonitor:
             await self.db.flush()
             return []
 
+        # Initialize progress tracking
+        if self.progress_tracker:
+            await self.progress_tracker.start_layer(
+                "MOF_TAX_REFORM",
+                run.id,
+                [(page.name, page.url) for page in target_pages],
+            )
+
         changes: list[NtaPageChange] = []
 
         for page in target_pages:
             run.pages_checked += 1
             start_time = time.time()
+            
+            # Update progress: mark as CRAWLING
+            if self.progress_tracker:
+                await self.progress_tracker.update_page(
+                    "MOF_TAX_REFORM", page.name, CrawlPageStatus.CRAWLING
+                )
 
             try:
                 change = await self._process_mof_page(page, run.id, start_time)
                 if change:
                     changes.append(change)
                     run.pages_changed += 1
+                
+                # Update progress: mark as SUCCESS
+                if self.progress_tracker:
+                    response_time_ms = int((time.time() - start_time) * 1000)
+                    await self.progress_tracker.update_page(
+                        "MOF_TAX_REFORM",
+                        page.name,
+                        CrawlPageStatus.SUCCESS,
+                        response_time_ms=response_time_ms,
+                        changed=change is not None,
+                    )
             except Exception as e:
                 logger.exception(f"Failed to process MOF page {page.name}: {e}")
                 run.pages_failed += 1
                 await self._store_failed_snapshot(page, run.id, str(e))
+                
+                # Update progress: mark as FAILED
+                if self.progress_tracker:
+                    await self.progress_tracker.update_page(
+                        "MOF_TAX_REFORM",
+                        page.name,
+                        CrawlPageStatus.FAILED,
+                        error_message=str(e),
+                    )
 
         run.completed_at = datetime.now(UTC)
         await self.db.flush()
+
+        # Mark layer as completed in progress tracker
+        if self.progress_tracker:
+            await self.progress_tracker.complete_layer("MOF_TAX_REFORM")
 
         logger.info(
             f"MOF crawler run complete: checked={run.pages_checked}, "

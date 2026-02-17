@@ -16,3 +16,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
+
+
+def get_session_factory() -> async_sessionmaker[AsyncSession]:
+    """Return the async session factory for background tasks."""
+    return async_session_factory

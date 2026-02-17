@@ -79,6 +79,23 @@
   },
   "crawler": {
     "title": "Three-Layer Crawler Monitor",
+    "dashboard": {
+      "title": "Unified Status Dashboard",
+      "status": "Status",
+      "progress": "Progress",
+      "elapsed": "Elapsed",
+      "completed": "Completed",
+      "failed": "Failed",
+      "changed": "Changed",
+      "runAllButton": "Run All Crawlers (Background)",
+      "fetchError": "Failed to fetch progress: {error}",
+      "startFailed": "Failed to start crawlers: {error}"
+    },
+    "progress": {
+      "title": "Live Progress",
+      "runBackground": "Run Now (Background)",
+      "startFailed": "Failed to start: {error}"
+    },
     "layers": {
       "ntaTaxAnswer": "Layer 1: NTA Tax Answer",
       "mofTaxReform": "Layer 2: MOF Tax Reform",

@@ -79,6 +79,23 @@
   },
   "crawler": {
     "title": "三层爬虫监控",
+    "dashboard": {
+      "title": "统一状态仪表板",
+      "status": "状态",
+      "progress": "进度",
+      "elapsed": "已用时间",
+      "completed": "已完成",
+      "failed": "失败",
+      "changed": "变更",
+      "runAllButton": "执行所有爬虫（后台）",
+      "fetchError": "进度获取失败: {error}",
+      "startFailed": "爬虫启动失败: {error}"
+    },
+    "progress": {
+      "title": "实时进度",
+      "runBackground": "立即执行（后台）",
+      "startFailed": "启动失败: {error}"
+    },
     "layers": {
       "ntaTaxAnswer": "第一层: NTA 税务问答",
       "mofTaxReform": "第二层: 财务省税制改革",

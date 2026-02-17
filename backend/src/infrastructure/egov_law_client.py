@@ -15,12 +15,18 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
-from src.domain.enums import CrawlerRunTrigger, CrawlerSourceType, SnapshotStatus
+from src.domain.enums import CrawlPageStatus, CrawlerRunTrigger, CrawlerSourceType, SnapshotStatus
 from src.domain.schemas import NtaPageChange
 from src.infrastructure.models import NtaCrawlerRun, NtaPageSnapshot, NtaTargetPage
 from src.logging_config import get_logger
 
 logger = get_logger(__name__)
+
+# Avoid circular import by making progress tracker optional
+try:
+    from src.infrastructure.crawler_progress import CrawlerProgressTracker
+except ImportError:
+    CrawlerProgressTracker = None  # type: ignore
 
 
 class EgovLawClient:
@@ -30,9 +36,10 @@ class EgovLawClient:
     Detects changes by comparing XML content hashes.
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, progress_tracker: "CrawlerProgressTracker | None" = None):
         self.db = db
         self.api_base = settings.egov_api_base_url
+        self.progress_tracker = progress_tracker
 
     async def check_for_changes(self, trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL) -> list[NtaPageChange]:
         """Fetch e-Gov law data and detect changes.
@@ -62,24 +69,62 @@ class EgovLawClient:
             await self.db.flush()
             return []
 
+        # Initialize progress tracking
+        if self.progress_tracker:
+            await self.progress_tracker.start_layer(
+                "EGOV_LAW",
+                run.id,
+                [(page.name, page.url) for page in target_pages],
+            )
+
         changes: list[NtaPageChange] = []
 
         for page in target_pages:
             run.pages_checked += 1
             start_time = time.time()
+            
+            # Update progress: mark as CRAWLING
+            if self.progress_tracker:
+                await self.progress_tracker.update_page(
+                    "EGOV_LAW", page.name, CrawlPageStatus.CRAWLING
+                )
 
             try:
                 change = await self._process_egov_law(page, run.id, start_time)
                 if change:
                     changes.append(change)
                     run.pages_changed += 1
+                
+                # Update progress: mark as SUCCESS
+                if self.progress_tracker:
+                    response_time_ms = int((time.time() - start_time) * 1000)
+                    await self.progress_tracker.update_page(
+                        "EGOV_LAW",
+                        page.name,
+                        CrawlPageStatus.SUCCESS,
+                        response_time_ms=response_time_ms,
+                        changed=change is not None,
+                    )
             except Exception as e:
                 logger.exception(f"Failed to process e-Gov law {page.name}: {e}")
                 run.pages_failed += 1
                 await self._store_failed_snapshot(page, run.id, str(e))
+                
+                # Update progress: mark as FAILED
+                if self.progress_tracker:
+                    await self.progress_tracker.update_page(
+                        "EGOV_LAW",
+                        page.name,
+                        CrawlPageStatus.FAILED,
+                        error_message=str(e),
+                    )
 
         run.completed_at = datetime.now(UTC)
         await self.db.flush()
+
+        # Mark layer as completed in progress tracker
+        if self.progress_tracker:
+            await self.progress_tracker.complete_layer("EGOV_LAW")
 
         logger.info(
             f"e-Gov crawler run complete: checked={run.pages_checked}, "

@@ -79,6 +79,23 @@
   },
   "crawler": {
     "title": "三層爬蟲監控",
+    "dashboard": {
+      "title": "統一狀態儀表板",
+      "status": "狀態",
+      "progress": "進度",
+      "elapsed": "已用時間",
+      "completed": "已完成",
+      "failed": "失敗",
+      "changed": "變更",
+      "runAllButton": "執行所有爬蟲（背景）",
+      "fetchError": "進度取得失敗: {error}",
+      "startFailed": "爬蟲啟動失敗: {error}"
+    },
+    "progress": {
+      "title": "即時進度",
+      "runBackground": "立即執行（背景）",
+      "startFailed": "啟動失敗: {error}"
+    },
     "layers": {
       "ntaTaxAnswer": "第一層: NTA 稅務問答",
       "mofTaxReform": "第二層: 財務省稅制改革",

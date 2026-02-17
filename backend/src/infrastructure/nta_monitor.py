@@ -14,12 +14,18 @@ from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.enums import CrawlerRunTrigger, SnapshotStatus
+from src.domain.enums import CrawlPageStatus, CrawlerRunTrigger, SnapshotStatus
 from src.domain.schemas import NtaPageChange
 from src.infrastructure.models import NtaCrawlerRun, NtaPageSnapshot, NtaTargetPage
 from src.logging_config import get_logger
 
 logger = get_logger(__name__)
+
+# Avoid circular import by making progress tracker optional
+try:
+    from src.infrastructure.crawler_progress import CrawlerProgressTracker
+except ImportError:
+    CrawlerProgressTracker = None  # type: ignore
 
 # Crawl4AI v0.8 configuration
 BROWSER_CONFIG = BrowserConfig(headless=True)
@@ -37,8 +43,9 @@ class NtaMonitor:
     Uses fit_markdown hash for change detection (more stable than HTML hash).
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, progress_tracker: "CrawlerProgressTracker | None" = None):
         self.db = db
+        self.progress_tracker = progress_tracker
 
     async def check_for_changes(
         self, trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL
@@ -66,6 +73,14 @@ class NtaMonitor:
             await self.db.flush()
             return []
 
+        # Initialize progress tracking
+        if self.progress_tracker:
+            await self.progress_tracker.start_layer(
+                "NTA_TAX_ANSWER",
+                run.id,
+                [(page.name, page.url) for page in target_pages],
+            )
+
         changes: list[NtaPageChange] = []
         
         # Use arun_many for batch crawling with built-in rate limiting
@@ -82,6 +97,13 @@ class NtaMonitor:
                 # Process results and match with target pages
                 for page, result in zip(target_pages, results):
                     run.pages_checked += 1
+                    
+                    # Update progress: mark as CRAWLING
+                    if self.progress_tracker:
+                        await self.progress_tracker.update_page(
+                            "NTA_TAX_ANSWER", page.name, CrawlPageStatus.CRAWLING
+                        )
+                    
                     response_time_ms = int((time.time() - start_times[page.url]) * 1000)
                     
                     if result.success:
@@ -92,21 +114,55 @@ class NtaMonitor:
                             if change:
                                 changes.append(change)
                                 run.pages_changed += 1
+                            
+                            # Update progress: mark as SUCCESS
+                            if self.progress_tracker:
+                                await self.progress_tracker.update_page(
+                                    "NTA_TAX_ANSWER",
+                                    page.name,
+                                    CrawlPageStatus.SUCCESS,
+                                    response_time_ms=response_time_ms,
+                                    changed=change is not None,
+                                )
                         except Exception as e:
                             logger.exception(f"Failed to process result for {page.name}")
                             run.pages_failed += 1
                             await self._store_failed_snapshot(page, run.id, str(e))
+                            
+                            # Update progress: mark as FAILED
+                            if self.progress_tracker:
+                                await self.progress_tracker.update_page(
+                                    "NTA_TAX_ANSWER",
+                                    page.name,
+                                    CrawlPageStatus.FAILED,
+                                    error_message=str(e),
+                                )
                     else:
                         logger.error(f"Crawl failed for {page.name}: {result.error_message}")
                         run.pages_failed += 1
                         await self._store_failed_snapshot(page, run.id, result.error_message or "Unknown error")
                         
+                        # Update progress: mark as FAILED
+                        if self.progress_tracker:
+                            await self.progress_tracker.update_page(
+                                "NTA_TAX_ANSWER",
+                                page.name,
+                                CrawlPageStatus.FAILED,
+                                error_message=result.error_message or "Unknown error",
+                            )
+                        
             except Exception as e:
                 logger.exception(f"Batch crawl failed: {e}")
                 run.pages_failed = run.pages_checked
+                if self.progress_tracker:
+                    await self.progress_tracker.fail_layer("NTA_TAX_ANSWER", str(e))
 
         run.completed_at = datetime.now(timezone.utc)
         await self.db.flush()
+
+        # Mark layer as completed in progress tracker
+        if self.progress_tracker:
+            await self.progress_tracker.complete_layer("NTA_TAX_ANSWER")
 
         logger.info(
             f"Crawler run complete: checked={run.pages_checked}, "

@@ -4,7 +4,16 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from src.domain.constants import SUPPORTED_LOCALES
-from src.domain.enums import IncomeType, LawChangeType, LlmProvider, NotificationEvent, ReviewDecision, VerificationStatus
+from src.domain.enums import (
+    CrawlLayerStatus,
+    CrawlPageStatus,
+    IncomeType,
+    LawChangeType,
+    LlmProvider,
+    NotificationEvent,
+    ReviewDecision,
+    VerificationStatus,
+)
 
 
 # --- User ---
@@ -525,3 +534,38 @@ class NotificationLogEntry(BaseModel):
     sent_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# --- Crawler Progress Monitoring ---
+class PageProgress(BaseModel):
+    """Progress tracking for a single page being crawled."""
+
+    page_name: str = Field(description="Name of the page")
+    page_url: str = Field(description="URL of the page")
+    status: CrawlPageStatus = Field(description="Current status: PENDING / CRAWLING / SUCCESS / FAILED")
+    response_time_ms: int | None = Field(None, description="Response time in milliseconds")
+    error_message: str | None = Field(None, description="Error message if failed")
+
+
+class LayerProgress(BaseModel):
+    """Progress tracking for a crawler layer (NTA, MOF, or e-Gov)."""
+
+    source_type: str = Field(description="Source type: NTA_TAX_ANSWER / MOF_TAX_REFORM / EGOV_LAW")
+    layer_label: str = Field(description="Human-readable layer label (e.g., 'Layer 1: NTA Tax Answer')")
+    status: CrawlLayerStatus = Field(description="Current status: IDLE / RUNNING / COMPLETED / FAILED")
+    run_id: int | None = Field(None, description="ID of the current crawler run")
+    total_pages: int = Field(0, description="Total number of pages to crawl")
+    completed_pages: int = Field(0, description="Number of pages completed (success + failed)")
+    failed_pages: int = Field(0, description="Number of pages that failed")
+    changed_pages: int = Field(0, description="Number of pages with detected changes")
+    progress_percent: float = Field(0.0, description="Progress percentage (0.0 to 100.0)")
+    pages: list[PageProgress] = Field(default_factory=list, description="Per-page progress details")
+    started_at: datetime | None = Field(None, description="When the crawl started")
+    elapsed_seconds: float = Field(0.0, description="Elapsed time in seconds")
+
+
+class CrawlerProgressResponse(BaseModel):
+    """Overall crawler progress across all three layers."""
+
+    layers: list[LayerProgress] = Field(description="Progress for each layer")
+    any_running: bool = Field(description="True if any layer is currently running")

@@ -4,6 +4,7 @@ Streamlit app for reviewing and approving algorithm changes.
 Run with: streamlit run admin/app.py
 """
 import os
+import time
 
 import httpx
 import streamlit as st
@@ -240,7 +241,100 @@ elif page == t(tr, "pages.llmConfiguration"):
 elif page == t(tr, "pages.crawlerMonitor"):
     st.header(t(tr, "crawler.title"))
 
-    # --- Layer Tabs ---
+    # --- A. Unified Status Dashboard ---
+    st.subheader(t(tr, "crawler.dashboard.title"))
+    
+    any_running = False
+    layers = []
+    
+    try:
+        progress = fetch_json("/admin/nta/progress")
+        layers = progress.get("layers", [])
+        any_running = progress.get("any_running", False)
+        
+        # Three-column layout for layer status
+        col1, col2, col3 = st.columns(3)
+        
+        for idx, layer in enumerate(layers):
+            col = [col1, col2, col3][idx]
+            with col:
+                status = layer["status"]
+                status_emoji = {
+                    "IDLE": "⚪",
+                    "RUNNING": "🟢",
+                    "COMPLETED": "✅",
+                    "FAILED": "❌"
+                }.get(status, "?")
+                
+                st.markdown(f"### {status_emoji} {layer['layer_label']}")
+                st.metric(t(tr, "crawler.dashboard.status"), status)
+                
+                if status == "RUNNING":
+                    st.metric(t(tr, "crawler.dashboard.progress"), f"{layer['progress_percent']:.1f}%")
+                    st.metric(t(tr, "crawler.dashboard.elapsed"), f"{layer['elapsed_seconds']:.0f}s")
+                elif status in ("COMPLETED", "FAILED"):
+                    st.metric(t(tr, "crawler.dashboard.completed"), f"{layer['completed_pages']}/{layer['total_pages']}")
+                    if layer['failed_pages'] > 0:
+                        st.metric(t(tr, "crawler.dashboard.failed"), layer['failed_pages'])
+                    if layer['changed_pages'] > 0:
+                        st.metric(t(tr, "crawler.dashboard.changed"), layer['changed_pages'])
+        
+        # Run All button
+        if not any_running:
+            if st.button(t(tr, "crawler.dashboard.runAllButton"), use_container_width=True):
+                try:
+                    result = post_json("/admin/nta/start-crawl?layer=all")
+                    st.success(result.get("message", "Started"))
+                    st.rerun()
+                except Exception as e:
+                    st.error(t(tr, "crawler.dashboard.startFailed", error=str(e)))
+        
+    except Exception as e:
+        st.error(t(tr, "crawler.dashboard.fetchError", error=str(e)))
+
+    # --- B. Live Progress Panel (shown when any crawl is running) ---
+    if any_running:
+        st.divider()
+        st.subheader(t(tr, "crawler.progress.title"))
+        
+        # Create a placeholder for auto-refresh
+        progress_placeholder = st.empty()
+        
+        # Auto-refresh every 2 seconds while running
+        for layer in layers:
+            if layer["status"] == "RUNNING":
+                with progress_placeholder.container():
+                    st.markdown(f"**{layer['layer_label']}**")
+                    st.progress(layer["progress_percent"] / 100.0)
+                    
+                    # Page-by-page status
+                    if layer.get("pages"):
+                        page_data = []
+                        for page_info in layer["pages"]:
+                            status_icon = {
+                                "PENDING": "⏳",
+                                "CRAWLING": "🔄",
+                                "SUCCESS": "✅",
+                                "FAILED": "❌"
+                            }.get(page_info["status"], "?")
+                            
+                            page_data.append({
+                                "Status": status_icon,
+                                "Page": page_info["page_name"],
+                                "Time (ms)": page_info.get("response_time_ms", ""),
+                                "Error": page_info.get("error_message", "")[:50] if page_info.get("error_message") else ""
+                            })
+                        
+                        if page_data:
+                            st.dataframe(page_data, use_container_width=True, hide_index=True)
+                
+                # Auto-refresh by rerunning after 2 seconds
+                time.sleep(2)
+                st.rerun()
+
+    st.divider()
+
+    # --- C. Per-Layer Tabs (existing, enhanced) ---
     layer_tab = st.tabs([
         t(tr, "crawler.layers.ntaTaxAnswer"),
         t(tr, "crawler.layers.mofTaxReform"),
@@ -278,58 +372,91 @@ elif page == t(tr, "pages.crawlerMonitor"):
         except Exception as e:
             st.error(t(tr, "crawler.nta.fetchError", error=str(e)))
 
-        # Run Now button
-        if st.button(t(tr, "crawler.nta.runButton"), key="nta_run"):
-            with st.spinner(t(tr, "crawler.nta.running")):
+        # Run Now button (background)
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button(t(tr, "crawler.nta.runButton"), key="nta_run"):
+                with st.spinner(t(tr, "crawler.nta.running")):
+                    try:
+                        changes = post_json("/admin/nta/check-now")
+                        if changes:
+                            st.success(t(tr, "crawler.nta.completeChanges", count=len(changes)))
+                            for change in changes:
+                                st.write(t(tr, "crawler.nta.changeInfo", page=change['page_name'], hash=change['new_hash'][:12]))
+                        else:
+                            st.success(t(tr, "crawler.nta.completeNoChanges"))
+                        st.rerun()
+                    except Exception as e:
+                        st.error(t(tr, "crawler.nta.runFailed", error=str(e)))
+        
+        with col_b:
+            if st.button(t(tr, "crawler.progress.runBackground"), key="nta_run_bg"):
                 try:
-                    changes = post_json("/admin/nta/check-now")
-                    if changes:
-                        st.success(t(tr, "crawler.nta.completeChanges", count=len(changes)))
-                        for change in changes:
-                            st.write(t(tr, "crawler.nta.changeInfo", page=change['page_name'], hash=change['new_hash'][:12]))
-                    else:
-                        st.success(t(tr, "crawler.nta.completeNoChanges"))
+                    result = post_json("/admin/nta/start-crawl?layer=nta")
+                    st.success(result.get("message", "Started"))
                     st.rerun()
                 except Exception as e:
-                    st.error(t(tr, "crawler.nta.runFailed", error=str(e)))
+                    st.error(t(tr, "crawler.progress.startFailed", error=str(e)))
 
     # --- 2. Layer 2: MOF Tax Reform ---
     with layer_tab[1]:
         st.subheader(t(tr, "crawler.mof.title"))
         st.info(t(tr, "crawler.mof.description"))
 
-        if st.button(t(tr, "crawler.mof.runButton"), key="mof_run"):
-            with st.spinner(t(tr, "crawler.mof.running")):
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button(t(tr, "crawler.mof.runButton"), key="mof_run"):
+                with st.spinner(t(tr, "crawler.mof.running")):
+                    try:
+                        changes = post_json("/admin/nta/check-mof")
+                        if changes:
+                            st.success(t(tr, "crawler.mof.completeChanges", count=len(changes)))
+                            for change in changes:
+                                st.write(t(tr, "crawler.mof.changeInfo", page=change['page_name'], hash=change['new_hash'][:12]))
+                        else:
+                            st.success(t(tr, "crawler.mof.completeNoChanges"))
+                        st.rerun()
+                    except Exception as e:
+                        st.error(t(tr, "crawler.mof.runFailed", error=str(e)))
+        
+        with col_b:
+            if st.button(t(tr, "crawler.progress.runBackground"), key="mof_run_bg"):
                 try:
-                    changes = post_json("/admin/nta/check-mof")
-                    if changes:
-                        st.success(t(tr, "crawler.mof.completeChanges", count=len(changes)))
-                        for change in changes:
-                            st.write(t(tr, "crawler.mof.changeInfo", page=change['page_name'], hash=change['new_hash'][:12]))
-                    else:
-                        st.success(t(tr, "crawler.mof.completeNoChanges"))
+                    result = post_json("/admin/nta/start-crawl?layer=mof")
+                    st.success(result.get("message", "Started"))
                     st.rerun()
                 except Exception as e:
-                    st.error(t(tr, "crawler.mof.runFailed", error=str(e)))
+                    st.error(t(tr, "crawler.progress.startFailed", error=str(e)))
 
     # --- 3. Layer 3: e-Gov Law ---
     with layer_tab[2]:
         st.subheader(t(tr, "crawler.egov.title"))
         st.info(t(tr, "crawler.egov.description"))
 
-        if st.button(t(tr, "crawler.egov.runButton"), key="egov_run"):
-            with st.spinner(t(tr, "crawler.egov.running")):
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button(t(tr, "crawler.egov.runButton"), key="egov_run"):
+                with st.spinner(t(tr, "crawler.egov.running")):
+                    try:
+                        changes = post_json("/admin/nta/check-egov")
+                        if changes:
+                            st.success(t(tr, "crawler.egov.completeChanges", count=len(changes)))
+                            for change in changes:
+                                st.write(t(tr, "crawler.egov.changeInfo", page=change['page_name'], hash=change['new_hash'][:12]))
+                        else:
+                            st.success(t(tr, "crawler.egov.completeNoChanges"))
+                        st.rerun()
+                    except Exception as e:
+                        st.error(t(tr, "crawler.egov.runFailed", error=str(e)))
+        
+        with col_b:
+            if st.button(t(tr, "crawler.progress.runBackground"), key="egov_run_bg"):
                 try:
-                    changes = post_json("/admin/nta/check-egov")
-                    if changes:
-                        st.success(t(tr, "crawler.egov.completeChanges", count=len(changes)))
-                        for change in changes:
-                            st.write(t(tr, "crawler.egov.changeInfo", page=change['page_name'], hash=change['new_hash'][:12]))
-                    else:
-                        st.success(t(tr, "crawler.egov.completeNoChanges"))
+                    result = post_json("/admin/nta/start-crawl?layer=egov")
+                    st.success(result.get("message", "Started"))
                     st.rerun()
                 except Exception as e:
-                    st.error(t(tr, "crawler.egov.runFailed", error=str(e)))
+                    st.error(t(tr, "crawler.progress.startFailed", error=str(e)))
 
     # --- 4. All Layers ---
     with layer_tab[3]:
