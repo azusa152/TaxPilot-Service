@@ -126,11 +126,83 @@ NTA_TARGET_PAGES: list[tuple[str, str, str, str]] = [
         "Furusato Nouzei on NTA (ふるさと納税 - 国税庁)",
         "NTA_TAX_ANSWER",
     ),
+    (
+        "medical_expense_deduction",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1120.htm",
+        "Medical expense deduction (医療費控除)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "earthquake_insurance",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1145.htm",
+        "Earthquake insurance deduction (地震保険料控除)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "disability_deduction",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1160.htm",
+        "Disability deduction (障害者控除)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "single_parent_deduction",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1171.htm",
+        "Single parent deduction (ひとり親控除)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "working_student_deduction",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1175.htm",
+        "Working student deduction (勤労学生控除)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "special_spouse_deduction",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1195.htm",
+        "Special spouse deduction (配偶者特別控除)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "income_tax_overview",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/shoto319.htm",
+        "Income tax calculation flow overview (所得税の計算の仕方)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "salary_income",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1400.htm",
+        "Salary income definition (給与所得)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "retirement_income",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1420.htm",
+        "Retirement income taxation (退職所得)",
+        "NTA_TAX_ANSWER",
+    ),
+    (
+        "housing_loan_deduction",
+        "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1211-1.htm",
+        "Housing loan deduction (住宅借入金等特別控除)",
+        "NTA_TAX_ANSWER",
+    ),
     # MOF Tax Reform (Layer 2)
     (
         "mof_tax_reform_outline",
         "https://www.mof.go.jp/tax_policy/tax_reform/outline/index.html",
         "MOF Tax Reform outline page (財務省 税制改正)",
+        "MOF_TAX_REFORM",
+    ),
+    (
+        "mof_tax_reform_fy2025",
+        "https://www.mof.go.jp/tax_policy/tax_reform/outline/fy2025/07taikou_mokuji.htm",
+        "FY2025 (R7) tax reform outline (令和7年度税制改正の大綱)",
+        "MOF_TAX_REFORM",
+    ),
+    (
+        "mof_tax_system_brochure",
+        "https://www.mof.go.jp/tax_policy/publication/brochure/index.html",
+        "Taxes in Japan brochure index (税制関連パンフレット)",
         "MOF_TAX_REFORM",
     ),
     # e-Gov Laws (Layer 3)
@@ -144,6 +216,24 @@ NTA_TARGET_PAGES: list[tuple[str, str, str, str]] = [
         "egov_local_tax_law",
         "egov://325AC0000000226",
         "Local Tax Act from e-Gov (地方税法)",
+        "EGOV_LAW",
+    ),
+    (
+        "egov_consumption_tax_law",
+        "egov://363AC0000000108",
+        "Consumption Tax Act from e-Gov (消費税法)",
+        "EGOV_LAW",
+    ),
+    (
+        "egov_inheritance_tax_law",
+        "egov://325AC0000000073",
+        "Inheritance Tax Act from e-Gov (相続税法)",
+        "EGOV_LAW",
+    ),
+    (
+        "egov_special_tax_measures",
+        "egov://332AC0000000026",
+        "Special Taxation Measures Act from e-Gov (租税特別措置法)",
         "EGOV_LAW",
     ),
 ]

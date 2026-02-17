@@ -14,7 +14,7 @@ from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.enums import CrawlPageStatus, CrawlerRunTrigger, SnapshotStatus
+from src.domain.enums import CrawlPageStatus, CrawlerRunTrigger, CrawlerSourceType, SnapshotStatus
 from src.domain.schemas import NtaPageChange
 from src.infrastructure.models import NtaCrawlerRun, NtaPageSnapshot, NtaTargetPage
 from src.logging_config import get_logger
@@ -63,7 +63,10 @@ class NtaMonitor:
         await self.db.flush()
 
         result = await self.db.execute(
-            select(NtaTargetPage).where(NtaTargetPage.is_active == True)  # noqa: E712
+            select(NtaTargetPage).where(
+                NtaTargetPage.is_active == True,  # noqa: E712
+                NtaTargetPage.source_type == CrawlerSourceType.NTA_TAX_ANSWER,
+            )
         )
         target_pages = result.scalars().all()
 
