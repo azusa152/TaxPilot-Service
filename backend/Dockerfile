@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install system dependencies including Playwright requirements
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev \
+    gcc libpq-dev gosu \
     # Playwright dependencies
     libglib2.0-0 \
     libnss3 \
@@ -30,19 +30,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libexpat1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user early
+RUN useradd --create-home appuser
+
 # Install Python dependencies
 COPY pyproject.toml .
 RUN pip install --no-cache-dir ".[dev]"
 
-# Install Playwright browsers
+# Install Playwright browsers as appuser
+RUN chown -R appuser:appuser /app
+USER appuser
 RUN playwright install chromium
+
+# Switch back to root to copy files and set up entrypoint
+USER root
 
 # Copy application code
 COPY . .
-
-# Create non-root user (used by entrypoint, not USER directive — compatible with bind-mount volumes)
-RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/* \
-    && useradd --create-home appuser
+RUN chown -R appuser:appuser /app
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
