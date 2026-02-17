@@ -14,6 +14,7 @@ import { RequireUser } from "@/components/shared/RequireUser";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { InstructionSection } from "@/components/shared/InstructionSection";
 import { Trash2 } from "lucide-react";
 
 function IncomeListContent() {
@@ -130,6 +131,10 @@ function IncomeListContent() {
           {t("addNew")}
         </Link>
       </div>
+
+      <InstructionSection title={t("instructions.title")}>
+        <p>{t("instructions.body")}</p>
+      </InstructionSection>
 
       <DataTable
         columns={columns}

@@ -89,7 +89,7 @@ class TestGetActiveConfig:
     async def test_returns_active_config(self, db_session):
         config = LlmProviderConfig(
             provider="anthropic",
-            model_name="anthropic/claude-3-5-sonnet-20241022",
+            model_name="anthropic/claude-sonnet-4-20250514",
             encrypted_api_token="encrypted_token",
             is_active=True,
             monthly_budget_usd=30.00,

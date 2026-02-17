@@ -1,0 +1,197 @@
+{
+  "app": {
+    "title": "TaxPilot 管理儀表板",
+    "nav": "導航",
+    "language": "語言"
+  },
+  "pages": {
+    "algorithmRegistry": "演算法註冊",
+    "llmConfiguration": "LLM 設定",
+    "crawlerMonitor": "爬蟲監控",
+    "systemHealth": "系統健康狀態"
+  },
+  "health": {
+    "title": "系統健康狀態",
+    "apiStatus": "API 狀態",
+    "database": "資料庫",
+    "fetchError": "健康檢查失敗: {error}"
+  },
+  "algorithm": {
+    "title": "演算法註冊",
+    "noAlgorithms": "尚無已註冊演算法。",
+    "activateButton": "啟用",
+    "activated": "已啟用 {name} v{version}",
+    "activationFailed": "啟用失敗: {error}",
+    "fetchError": "演算法取得失敗: {error}",
+    "register": {
+      "title": "註冊新演算法",
+      "functionName": "函數名稱",
+      "functionNamePlaceholder": "calc_furusato_limit",
+      "version": "版本",
+      "versionPlaceholder": "2025.1",
+      "code": "Python 程式碼",
+      "codePlaceholder": "def calc_furusato_limit(...):\\n    ...",
+      "lawHash": "法規雜湊（選填）",
+      "lawHashPlaceholder": "NTA 頁面的 sha256",
+      "submitButton": "註冊為 DRAFT",
+      "success": "已將 {name} v{version} 註冊為 DRAFT",
+      "failed": "註冊失敗: {error}",
+      "fillRequired": "請填寫函數名稱、版本和程式碼。"
+    }
+  },
+  "llm": {
+    "title": "LLM 設定",
+    "currentProvider": "目前提供者",
+    "provider": "提供者",
+    "model": "模型",
+    "active": "啟用",
+    "yes": "是",
+    "no": "否",
+    "token": "Token",
+    "monthlyBudget": "月度預算",
+    "noProvider": "未設定 LLM 提供者。請在下方設定。",
+    "fetchError": "設定取得失敗: {error}",
+    "updateProvider": "更新提供者",
+    "modelString": "模型字串",
+    "apiToken": "API Token",
+    "monthlyBudgetUsd": "月度預算（USD）",
+    "saveButton": "儲存設定",
+    "saved": "已儲存: {provider} / {model}",
+    "saveFailed": "設定儲存失敗: {error}",
+    "enterToken": "請輸入 API Token。",
+    "testConnection": "連線測試",
+    "testButton": "測試 LLM 連線",
+    "testing": "測試中...",
+    "status": "狀態",
+    "latency": "延遲",
+    "latencySeconds": "{seconds}秒",
+    "response": "回應",
+    "testFailed": "連線測試失敗: {error}",
+    "usage": {
+      "title": "使用狀況儀表板",
+      "totalCalls": "總呼叫次數",
+      "monthlyCost": "月度成本",
+      "budgetRemaining": "剩餘預算",
+      "promptTokens": "提示詞 Token: {count}",
+      "completionTokens": "補全 Token: {count}",
+      "fetchError": "使用狀況取得失敗: {error}"
+    }
+  },
+  "crawler": {
+    "title": "三層爬蟲監控",
+    "layers": {
+      "ntaTaxAnswer": "第一層: NTA 稅務問答",
+      "mofTaxReform": "第二層: 財務省稅制改革",
+      "egovLaw": "第三層: e-Gov 法令",
+      "all": "所有層級"
+    },
+    "nta": {
+      "title": "NTA 稅務問答爬蟲",
+      "status": "狀態",
+      "activePages": "啟用頁面數",
+      "activePagesCount": "{active} / {total}",
+      "lastRun": "上次執行",
+      "lastRunInfo": "確認 {checked} 筆，變更 {changed} 筆",
+      "lastRunTime": "上次執行: {time} ({trigger})",
+      "pagesFailed": "上次執行 {count} 頁失敗",
+      "never": "尚未執行",
+      "noRuns": "無爬蟲執行歷史記錄。點選「立即執行」開始。",
+      "fetchError": "爬蟲健康狀態取得失敗: {error}",
+      "runButton": "立即執行 NTA 爬蟲",
+      "running": "正在爬取 NTA 頁面...",
+      "completeChanges": "爬取完成: 偵測到 {count} 筆變更！",
+      "completeNoChanges": "爬取完成: 無變更。",
+      "runFailed": "爬取失敗: {error}",
+      "changeInfo": "- **{page}**: 雜湊變更為 `{hash}...`"
+    },
+    "mof": {
+      "title": "財務省稅制改革監控",
+      "description": "監控財務省稅制改革 PDF 文件（每週排程）",
+      "runButton": "立即執行 MOF 爬蟲",
+      "running": "正在檢查財務省稅制改革頁面...",
+      "completeChanges": "MOF 爬取完成: 偵測到 {count} 筆變更！",
+      "completeNoChanges": "MOF 爬取完成: 無變更。",
+      "runFailed": "MOF 爬取失敗: {error}",
+      "changeInfo": "- **{page}**: `{hash}...`"
+    },
+    "egov": {
+      "title": "e-Gov 法令 API 客戶端",
+      "description": "透過 e-Gov API 監控所得稅法與地方稅法（每月排程）",
+      "runButton": "立即執行 e-Gov 爬蟲",
+      "running": "正在檢查 e-Gov 法令 API...",
+      "completeChanges": "e-Gov 爬取完成: 偵測到 {count} 筆變更！",
+      "completeNoChanges": "e-Gov 爬取完成: 無變更。",
+      "runFailed": "e-Gov 爬取失敗: {error}",
+      "changeInfo": "- **{page}**: `{hash}...`"
+    },
+    "allLayers": {
+      "title": "執行所有爬蟲",
+      "description": "依序觸發三個層級: NTA → MOF → e-Gov",
+      "runButton": "立即執行所有爬蟲",
+      "running": "正在執行三個爬蟲層級...",
+      "completeChanges": "所有爬蟲完成: 偵測到總計 {total} 筆變更！",
+      "ntaChanges": "NTA 變更",
+      "mofChanges": "MOF 變更",
+      "egovChanges": "e-Gov 變更",
+      "ntaChangesList": "**NTA 變更:**",
+      "mofChangesList": "**MOF 變更:**",
+      "egovChangesList": "**e-Gov 變更:**",
+      "runFailed": "爬取失敗: {error}"
+    },
+    "targets": {
+      "title": "目標頁面（所有層級）",
+      "layer1": "**第一層（NTA）: {count} 頁**",
+      "layer2": "**第二層（MOF）: {count} 頁**",
+      "layer3": "**第三層（e-Gov）: {count} 頁**",
+      "url": "URL: {url}",
+      "description": "說明: {desc}",
+      "checkInterval": "檢查間隔: {hours} 小時",
+      "noTargets": "尚未設定目標頁面。請在下方新增。",
+      "fetchError": "目標取得失敗: {error}",
+      "addUpdate": "新增 / 更新目標頁面",
+      "pageName": "頁面名稱",
+      "pageNamePlaceholder": "income_tax_rates",
+      "urlInput": "URL",
+      "urlPlaceholder": "https://www.nta.go.jp/...",
+      "descriptionInput": "說明",
+      "descriptionPlaceholder": "所得稅率表",
+      "sourceType": "來源類型",
+      "sourceTypeHelp": "第一層: NTA 稅務問答 | 第二層: 財務省稅制改革 | 第三層: e-Gov 法令 API",
+      "checkIntervalHours": "檢查間隔（小時）",
+      "activeCheckbox": "啟用",
+      "saveButton": "儲存目標頁面",
+      "saved": "已儲存目標頁面: {name}",
+      "saveFailed": "目標儲存失敗: {error}",
+      "fillRequired": "請填寫頁面名稱和 URL。"
+    },
+    "snapshots": {
+      "title": "快照歷史",
+      "filterByPage": "依頁面名稱篩選",
+      "filterPlaceholder": "（所有頁面）",
+      "changesOnly": "僅變更",
+      "noSnapshots": "尚無快照。",
+      "fetchError": "快照取得失敗: {error}",
+      "status": {
+        "success": "成功",
+        "failed": "失敗",
+        "timeout": "逾時"
+      },
+      "hash": "雜湊: {hash}",
+      "url": "URL: {url}",
+      "error": "錯誤: {error}",
+      "renderedMarkdown": "渲染的 Markdown",
+      "rawCopyable": "原始資料（可複製）",
+      "extractedTables": "擷取的表格"
+    },
+    "runLog": {
+      "title": "爬取執行紀錄",
+      "noRuns": "無爬取執行歷史記錄。",
+      "fetchError": "執行紀錄取得失敗: {error}"
+    },
+    "errorLog": {
+      "title": "錯誤紀錄",
+      "noErrors": "最近的快照無錯誤。",
+      "fetchError": "錯誤紀錄取得失敗: {error}"
+    }
+  }
+}

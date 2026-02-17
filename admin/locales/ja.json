@@ -1,0 +1,197 @@
+{
+  "app": {
+    "title": "TaxPilot 管理ダッシュボード",
+    "nav": "ナビゲーション",
+    "language": "言語"
+  },
+  "pages": {
+    "algorithmRegistry": "アルゴリズム登録",
+    "llmConfiguration": "LLM設定",
+    "crawlerMonitor": "クローラー監視",
+    "systemHealth": "システムヘルス"
+  },
+  "health": {
+    "title": "システムヘルス",
+    "apiStatus": "APIステータス",
+    "database": "データベース",
+    "fetchError": "ヘルスチェック失敗: {error}"
+  },
+  "algorithm": {
+    "title": "アルゴリズム登録",
+    "noAlgorithms": "登録済みアルゴリズムはありません。",
+    "activateButton": "有効化",
+    "activated": "{name} v{version} を有効化しました",
+    "activationFailed": "有効化に失敗: {error}",
+    "fetchError": "アルゴリズムの取得に失敗: {error}",
+    "register": {
+      "title": "新規アルゴリズム登録",
+      "functionName": "関数名",
+      "functionNamePlaceholder": "calc_furusato_limit",
+      "version": "バージョン",
+      "versionPlaceholder": "2025.1",
+      "code": "Pythonコード",
+      "codePlaceholder": "def calc_furusato_limit(...):\\n    ...",
+      "lawHash": "法令ハッシュ（任意）",
+      "lawHashPlaceholder": "NTAページのsha256",
+      "submitButton": "DRAFTとして登録",
+      "success": "{name} v{version} をDRAFTとして登録しました",
+      "failed": "登録に失敗: {error}",
+      "fillRequired": "関数名、バージョン、コードを入力してください。"
+    }
+  },
+  "llm": {
+    "title": "LLM設定",
+    "currentProvider": "現在のプロバイダー",
+    "provider": "プロバイダー",
+    "model": "モデル",
+    "active": "有効",
+    "yes": "はい",
+    "no": "いいえ",
+    "token": "トークン",
+    "monthlyBudget": "月間予算",
+    "noProvider": "LLMプロバイダーが設定されていません。以下で設定してください。",
+    "fetchError": "設定の取得に失敗: {error}",
+    "updateProvider": "プロバイダー更新",
+    "modelString": "モデル文字列",
+    "apiToken": "APIトークン",
+    "monthlyBudgetUsd": "月間予算（USD）",
+    "saveButton": "設定を保存",
+    "saved": "保存しました: {provider} / {model}",
+    "saveFailed": "設定の保存に失敗: {error}",
+    "enterToken": "APIトークンを入力してください。",
+    "testConnection": "接続テスト",
+    "testButton": "LLM接続テスト",
+    "testing": "テスト中...",
+    "status": "ステータス",
+    "latency": "レイテンシ",
+    "latencySeconds": "{seconds}秒",
+    "response": "レスポンス",
+    "testFailed": "接続テストに失敗: {error}",
+    "usage": {
+      "title": "使用状況ダッシュボード",
+      "totalCalls": "総コール数",
+      "monthlyCost": "月間コスト",
+      "budgetRemaining": "残予算",
+      "promptTokens": "プロンプトトークン: {count}",
+      "completionTokens": "補完トークン: {count}",
+      "fetchError": "使用状況の取得に失敗: {error}"
+    }
+  },
+  "crawler": {
+    "title": "3層クローラー監視",
+    "layers": {
+      "ntaTaxAnswer": "レイヤー1: NTA税務相談",
+      "mofTaxReform": "レイヤー2: 財務省税制改正",
+      "egovLaw": "レイヤー3: e-Gov法令",
+      "all": "全レイヤー"
+    },
+    "nta": {
+      "title": "NTA税務相談クローラー",
+      "status": "ステータス",
+      "activePages": "有効ページ数",
+      "activePagesCount": "{active} / {total}",
+      "lastRun": "前回実行",
+      "lastRunInfo": "{checked}件確認、{changed}件変更",
+      "lastRunTime": "前回実行: {time} ({trigger})",
+      "pagesFailed": "前回実行で{count}ページが失敗",
+      "never": "未実行",
+      "noRuns": "クロール実行履歴がありません。「今すぐ実行」をクリックして開始してください。",
+      "fetchError": "クローラーヘルスの取得に失敗: {error}",
+      "runButton": "NTAクローラーを今すぐ実行",
+      "running": "NTAページをクロール中...",
+      "completeChanges": "クロール完了: {count}件の変更を検出!",
+      "completeNoChanges": "クロール完了: 変更はありませんでした。",
+      "runFailed": "クロール失敗: {error}",
+      "changeInfo": "- **{page}**: ハッシュが`{hash}...`に変更"
+    },
+    "mof": {
+      "title": "財務省税制改正監視",
+      "description": "財務省税制改正PDF文書を監視（週次スケジュール）",
+      "runButton": "MOFクローラーを今すぐ実行",
+      "running": "財務省税制改正ページを確認中...",
+      "completeChanges": "MOFクロール完了: {count}件の変更を検出!",
+      "completeNoChanges": "MOFクロール完了: 変更はありませんでした。",
+      "runFailed": "MOFクロール失敗: {error}",
+      "changeInfo": "- **{page}**: `{hash}...`"
+    },
+    "egov": {
+      "title": "e-Gov法令APIクライアント",
+      "description": "e-Gov APIを介して所得税法と地方税法を監視（月次スケジュール）",
+      "runButton": "e-Govクローラーを今すぐ実行",
+      "running": "e-Gov法令APIを確認中...",
+      "completeChanges": "e-Govクロール完了: {count}件の変更を検出!",
+      "completeNoChanges": "e-Govクロール完了: 変更はありませんでした。",
+      "runFailed": "e-Govクロール失敗: {error}",
+      "changeInfo": "- **{page}**: `{hash}...`"
+    },
+    "allLayers": {
+      "title": "全クローラーを実行",
+      "description": "3つのレイヤーを順次実行: NTA → MOF → e-Gov",
+      "runButton": "全クローラーを今すぐ実行",
+      "running": "3つのクローラーレイヤーを実行中...",
+      "completeChanges": "全クローラー完了: 合計{total}件の変更を検出!",
+      "ntaChanges": "NTA変更",
+      "mofChanges": "MOF変更",
+      "egovChanges": "e-Gov変更",
+      "ntaChangesList": "**NTA変更:**",
+      "mofChangesList": "**MOF変更:**",
+      "egovChangesList": "**e-Gov変更:**",
+      "runFailed": "クロール失敗: {error}"
+    },
+    "targets": {
+      "title": "ターゲットページ（全レイヤー）",
+      "layer1": "**レイヤー1（NTA）: {count}ページ**",
+      "layer2": "**レイヤー2（MOF）: {count}ページ**",
+      "layer3": "**レイヤー3（e-Gov）: {count}ページ**",
+      "url": "URL: {url}",
+      "description": "説明: {desc}",
+      "checkInterval": "チェック間隔: {hours}時間",
+      "noTargets": "ターゲットページが設定されていません。以下で追加してください。",
+      "fetchError": "ターゲットの取得に失敗: {error}",
+      "addUpdate": "ターゲットページの追加/更新",
+      "pageName": "ページ名",
+      "pageNamePlaceholder": "income_tax_rates",
+      "urlInput": "URL",
+      "urlPlaceholder": "https://www.nta.go.jp/...",
+      "descriptionInput": "説明",
+      "descriptionPlaceholder": "所得税率表",
+      "sourceType": "ソースタイプ",
+      "sourceTypeHelp": "レイヤー1: NTA税務相談 | レイヤー2: 財務省税制改正 | レイヤー3: e-Gov法令API",
+      "checkIntervalHours": "チェック間隔（時間）",
+      "activeCheckbox": "有効",
+      "saveButton": "ターゲットページを保存",
+      "saved": "ターゲットページを保存しました: {name}",
+      "saveFailed": "ターゲットの保存に失敗: {error}",
+      "fillRequired": "ページ名とURLを入力してください。"
+    },
+    "snapshots": {
+      "title": "スナップショット履歴",
+      "filterByPage": "ページ名でフィルター",
+      "filterPlaceholder": "（全ページ）",
+      "changesOnly": "変更のみ",
+      "noSnapshots": "スナップショットはまだありません。",
+      "fetchError": "スナップショットの取得に失敗: {error}",
+      "status": {
+        "success": "OK",
+        "failed": "失敗",
+        "timeout": "タイムアウト"
+      },
+      "hash": "ハッシュ: {hash}",
+      "url": "URL: {url}",
+      "error": "エラー: {error}",
+      "renderedMarkdown": "レンダリング済みMarkdown",
+      "rawCopyable": "生データ（コピー可能）",
+      "extractedTables": "抽出されたテーブル"
+    },
+    "runLog": {
+      "title": "クロール実行ログ",
+      "noRuns": "クロール実行履歴がありません。",
+      "fetchError": "実行ログの取得に失敗: {error}"
+    },
+    "errorLog": {
+      "title": "エラーログ",
+      "noErrors": "最近のスナップショットにエラーはありません。",
+      "fetchError": "エラーログの取得に失敗: {error}"
+    }
+  }
+}

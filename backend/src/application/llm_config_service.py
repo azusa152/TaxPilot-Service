@@ -119,8 +119,8 @@ async def get_usage_summary(db: AsyncSession) -> LlmUsageSummary:
             sqla_func.coalesce(sqla_func.sum(LlmUsageLog.cost_usd), 0).label("cost_usd"),
         )
         .where(LlmUsageLog.created_at >= month_start)
-        .group_by(sqla_func.date_trunc("day", LlmUsageLog.created_at))
-        .order_by(sqla_func.date_trunc("day", LlmUsageLog.created_at))
+        .group_by("day")
+        .order_by("day")
     )
     daily_breakdown = [
         {"date": str(row.day.date()), "calls": row.calls, "cost_usd": float(row.cost_usd)} for row in daily_result

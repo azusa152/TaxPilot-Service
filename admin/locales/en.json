@@ -1,0 +1,197 @@
+{
+  "app": {
+    "title": "TaxPilot Admin Dashboard",
+    "nav": "Navigation",
+    "language": "Language"
+  },
+  "pages": {
+    "algorithmRegistry": "Algorithm Registry",
+    "llmConfiguration": "LLM Configuration",
+    "crawlerMonitor": "Crawler Monitor",
+    "systemHealth": "System Health"
+  },
+  "health": {
+    "title": "System Health",
+    "apiStatus": "API Status",
+    "database": "Database",
+    "fetchError": "Failed to fetch health: {error}"
+  },
+  "algorithm": {
+    "title": "Algorithm Registry",
+    "noAlgorithms": "No algorithms registered yet.",
+    "activateButton": "Activate",
+    "activated": "Activated {name} v{version}",
+    "activationFailed": "Activation failed: {error}",
+    "fetchError": "Failed to fetch algorithms: {error}",
+    "register": {
+      "title": "Register New Algorithm",
+      "functionName": "Function Name",
+      "functionNamePlaceholder": "calc_furusato_limit",
+      "version": "Version",
+      "versionPlaceholder": "2025.1",
+      "code": "Python Code",
+      "codePlaceholder": "def calc_furusato_limit(...):\\n    ...",
+      "lawHash": "Source Law Hash (optional)",
+      "lawHashPlaceholder": "sha256 of NTA page",
+      "submitButton": "Register as DRAFT",
+      "success": "Registered {name} v{version} as DRAFT",
+      "failed": "Registration failed: {error}",
+      "fillRequired": "Please fill in Function Name, Version, and Code."
+    }
+  },
+  "llm": {
+    "title": "LLM Configuration",
+    "currentProvider": "Current Provider",
+    "provider": "Provider",
+    "model": "Model",
+    "active": "Active",
+    "yes": "Yes",
+    "no": "No",
+    "token": "Token",
+    "monthlyBudget": "Monthly Budget",
+    "noProvider": "No LLM provider configured. Set one below.",
+    "fetchError": "Failed to fetch config: {error}",
+    "updateProvider": "Update Provider",
+    "modelString": "Model String",
+    "apiToken": "API Token",
+    "monthlyBudgetUsd": "Monthly Budget (USD)",
+    "saveButton": "Save Configuration",
+    "saved": "Saved: {provider} / {model}",
+    "saveFailed": "Failed to save config: {error}",
+    "enterToken": "Please enter an API token.",
+    "testConnection": "Test Connection",
+    "testButton": "Test LLM Connection",
+    "testing": "Testing...",
+    "status": "Status",
+    "latency": "Latency",
+    "latencySeconds": "{seconds}s",
+    "response": "Response",
+    "testFailed": "Connection test failed: {error}",
+    "usage": {
+      "title": "Usage Dashboard",
+      "totalCalls": "Total Calls",
+      "monthlyCost": "Monthly Cost",
+      "budgetRemaining": "Budget Remaining",
+      "promptTokens": "Prompt tokens: {count}",
+      "completionTokens": "Completion tokens: {count}",
+      "fetchError": "Failed to fetch usage: {error}"
+    }
+  },
+  "crawler": {
+    "title": "Three-Layer Crawler Monitor",
+    "layers": {
+      "ntaTaxAnswer": "Layer 1: NTA Tax Answer",
+      "mofTaxReform": "Layer 2: MOF Tax Reform",
+      "egovLaw": "Layer 3: e-Gov Law",
+      "all": "All Layers"
+    },
+    "nta": {
+      "title": "NTA Tax Answer Crawler",
+      "status": "Status",
+      "activePages": "Active Pages",
+      "activePagesCount": "{active} / {total}",
+      "lastRun": "Last Run",
+      "lastRunInfo": "{checked} checked, {changed} changed",
+      "lastRunTime": "Last run: {time} ({trigger})",
+      "pagesFailed": "{count} page(s) failed in last run",
+      "never": "Never",
+      "noRuns": "No crawl runs yet. Click 'Run Now' to start.",
+      "fetchError": "Failed to fetch crawler health: {error}",
+      "runButton": "Run NTA Crawler Now",
+      "running": "Crawling NTA pages...",
+      "completeChanges": "Crawl complete: {count} change(s) detected!",
+      "completeNoChanges": "Crawl complete: no changes detected.",
+      "runFailed": "Crawl failed: {error}",
+      "changeInfo": "- **{page}**: hash changed to `{hash}...`"
+    },
+    "mof": {
+      "title": "MOF Tax Reform Monitor",
+      "description": "Monitors Ministry of Finance Tax Reform PDF documents (weekly schedule)",
+      "runButton": "Run MOF Crawler Now",
+      "running": "Checking MOF Tax Reform page...",
+      "completeChanges": "MOF crawl complete: {count} change(s) detected!",
+      "completeNoChanges": "MOF crawl complete: no changes detected.",
+      "runFailed": "MOF crawl failed: {error}",
+      "changeInfo": "- **{page}**: `{hash}...`"
+    },
+    "egov": {
+      "title": "e-Gov Law API Client",
+      "description": "Monitors Income Tax Act and Local Tax Act via e-Gov API (monthly schedule)",
+      "runButton": "Run e-Gov Crawler Now",
+      "running": "Checking e-Gov Law API...",
+      "completeChanges": "e-Gov crawl complete: {count} change(s) detected!",
+      "completeNoChanges": "e-Gov crawl complete: no changes detected.",
+      "runFailed": "e-Gov crawl failed: {error}",
+      "changeInfo": "- **{page}**: `{hash}...`"
+    },
+    "allLayers": {
+      "title": "Run All Crawlers",
+      "description": "Trigger all three layers sequentially: NTA → MOF → e-Gov",
+      "runButton": "Run All Crawlers Now",
+      "running": "Running all three crawler layers...",
+      "completeChanges": "All crawlers complete: {total} total change(s) detected!",
+      "ntaChanges": "NTA Changes",
+      "mofChanges": "MOF Changes",
+      "egovChanges": "e-Gov Changes",
+      "ntaChangesList": "**NTA Changes:**",
+      "mofChangesList": "**MOF Changes:**",
+      "egovChangesList": "**e-Gov Changes:**",
+      "runFailed": "Crawl failed: {error}"
+    },
+    "targets": {
+      "title": "Target Pages (All Layers)",
+      "layer1": "**Layer 1 (NTA): {count} pages**",
+      "layer2": "**Layer 2 (MOF): {count} pages**",
+      "layer3": "**Layer 3 (e-Gov): {count} pages**",
+      "url": "URL: {url}",
+      "description": "Description: {desc}",
+      "checkInterval": "Check interval: {hours}h",
+      "noTargets": "No target pages configured. Add one below.",
+      "fetchError": "Failed to fetch targets: {error}",
+      "addUpdate": "Add / Update Target Page",
+      "pageName": "Page Name",
+      "pageNamePlaceholder": "income_tax_rates",
+      "urlInput": "URL",
+      "urlPlaceholder": "https://www.nta.go.jp/...",
+      "descriptionInput": "Description",
+      "descriptionPlaceholder": "Income tax rate table",
+      "sourceType": "Source Type",
+      "sourceTypeHelp": "Layer 1: NTA Tax Answer | Layer 2: MOF Tax Reform | Layer 3: e-Gov Law API",
+      "checkIntervalHours": "Check Interval (hours)",
+      "activeCheckbox": "Active",
+      "saveButton": "Save Target Page",
+      "saved": "Saved target page: {name}",
+      "saveFailed": "Failed to save target: {error}",
+      "fillRequired": "Please fill in Page Name and URL."
+    },
+    "snapshots": {
+      "title": "Snapshot History",
+      "filterByPage": "Filter by page name",
+      "filterPlaceholder": "(all pages)",
+      "changesOnly": "Changes only",
+      "noSnapshots": "No snapshots yet.",
+      "fetchError": "Failed to fetch snapshots: {error}",
+      "status": {
+        "success": "OK",
+        "failed": "FAIL",
+        "timeout": "TIMEOUT"
+      },
+      "hash": "Hash: {hash}",
+      "url": "URL: {url}",
+      "error": "Error: {error}",
+      "renderedMarkdown": "Rendered Markdown",
+      "rawCopyable": "Raw (copyable)",
+      "extractedTables": "Extracted Tables"
+    },
+    "runLog": {
+      "title": "Crawl Run Log",
+      "noRuns": "No crawl runs yet.",
+      "fetchError": "Failed to fetch runs: {error}"
+    },
+    "errorLog": {
+      "title": "Error Log",
+      "noErrors": "No errors in recent snapshots.",
+      "fetchError": "Failed to fetch error log: {error}"
+    }
+  }
+}

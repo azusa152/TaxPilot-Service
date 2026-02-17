@@ -13,6 +13,7 @@ import {
 import { formatJPY } from "@/lib/format";
 import { RequireUser } from "@/components/shared/RequireUser";
 import { TaxBreakdownChart } from "@/components/shared/TaxBreakdownChart";
+import { InstructionSection } from "@/components/shared/InstructionSection";
 
 function CalculateContent() {
   const currentYear = new Date().getFullYear();
@@ -102,6 +103,12 @@ function CalculateContent() {
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="print:hidden">
+        <InstructionSection title={t("instructions.title")}>
+          <p>{t("instructions.body")}</p>
+        </InstructionSection>
       </div>
 
       {/* Calculate button / pre-calculation state */}

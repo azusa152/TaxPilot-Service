@@ -1,0 +1,208 @@
+{
+  "common": {
+    "appName": "TaxPilot",
+    "appDescription": "日本报税智能助手",
+    "welcome": "欢迎使用 TaxPilot",
+    "welcomeSubtitle": "您的日本报税智能助手。在一个地方管理收入、建立税务资料、计算税额。",
+    "getStarted": "开始使用",
+    "notFound": "找不到页面",
+    "loading": "加载中…",
+    "error": "发生错误",
+    "errorBoundaryMessage": "发生了意外错误。请重试。",
+    "retry": "重试",
+    "close": "关闭",
+    "skipToContent": "跳至主要内容",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "confirm": "确认",
+    "back": "返回",
+    "noData": "尚无数据",
+    "nav": {
+      "menu": "菜单",
+      "home": "首页",
+      "income": "收入",
+      "profile": "税务资料",
+      "upload": "上传文件",
+      "calculate": "税额计算"
+    },
+    "footer": {
+      "status": "API 状态",
+      "healthy": "已连线",
+      "degraded": "部分异常",
+      "offline": "离线"
+    },
+    "locale": {
+      "ja": "日本語",
+      "en": "English",
+      "zh-TW": "繁体中文",
+      "zh-CN": "简体中文",
+      "switchLocale": "语言"
+    },
+    "instructions": {
+      "title": "使用说明",
+      "body": "TaxPilot 帮助您管理日本的收入记录、建立税务资料并计算所得税。首先添加您的收入项目，然后填写税务资料，最后进行税额计算。"
+    }
+  },
+  "onboarding": {
+    "title": "创建账号",
+    "subtitle": "输入您的姓名以开始使用 TaxPilot。",
+    "displayName": "显示名称",
+    "displayNamePlaceholder": "例如：山田太郎",
+    "submit": "创建账号",
+    "creating": "创建中…",
+    "instructions": {
+      "title": "关于账号创建",
+      "body": "创建账号后，您可以开始记录收入、管理税务资料。您的数据将安全存储，仅供您本人访问。"
+    }
+  },
+  "income": {
+    "title": "收入项目",
+    "addNew": "新增收入",
+    "empty": "尚无收入项目。新增您的第一笔收入以开始使用。",
+    "deleteConfirm": "确定要删除此收入项目吗？",
+    "deleting": "删除中…",
+    "table": {
+      "date": "支付日期",
+      "type": "类型",
+      "gross": "总额",
+      "socialInsurance": "社会保险",
+      "withholdingTax": "预扣税",
+      "residentTax": "住民税",
+      "actions": "操作"
+    },
+    "type": {
+      "SALARY": "薪资",
+      "BONUS": "奖金",
+      "OTHER": "其他"
+    },
+    "instructions": {
+      "title": "收入管理说明",
+      "body": "在此查看和管理您的所有收入记录。点击「新增收入」添加新的收入项目，或点击「删除」删除不需要的记录。收入数据将用于年度税额计算。"
+    },
+    "form": {
+      "title": "新增收入项目",
+      "paymentDate": "支付日期",
+      "incomeType": "收入类型",
+      "selectType": "选择类型…",
+      "grossAmount": "总额（日元）",
+      "socialInsurance": "社会保险（日元）",
+      "withholdingTax": "预扣税（日元）",
+      "residentTax": "住民税（日元）",
+      "submit": "新增",
+      "submitting": "新增中…",
+      "success": "收入项目已成功新增。",
+      "instructions": {
+        "title": "填写说明",
+        "body": "请根据您的工资单或收入凭证填写各项金额。总额是税前收入，社会保险、预扣税和住民税是各项扣除金额。这些信息可以在工资单的「控除」部分找到。"
+      },
+      "validation": {
+        "dateRequired": "支付日期为必填",
+        "typeRequired": "收入类型为必填",
+        "grossRequired": "总额为必填",
+        "grossPositive": "总额必须为正数",
+        "amountNonNegative": "金额不可为负数"
+      }
+    }
+  },
+  "profile": {
+    "title": "税务资料",
+    "yearLabel": "税务年度",
+    "coreFields": "基本信息",
+    "dynamicFields": "年度专属字段",
+    "noDefinition": "此税务年度尚无资料定义。",
+    "notFound": "找不到此年度的资料。请填写表单以建立。",
+    "saving": "保存中…",
+    "saved": "资料已成功保存。",
+    "instructions": {
+      "title": "税务资料说明",
+      "body": "税务资料包含计算所得税所需的个人信息和扣除项目。基本信息包括配偶、扶养人数等核心字段。年度专属字段根据当年税法政策动态变化（如定额减税、故乡税等）。配偶和扶养人数会影响扣除额度。"
+    },
+    "field": {
+      "hasSpouse": "配偶有无",
+      "dependentsCount": "扶养人数",
+      "socialInsurancePremium": "年度社会保险费（日元）",
+      "lifeInsurancePremium": "年度人寿保险费（日元）",
+      "idecoMonthlyContribution": "iDeCo 月缴金额（日元）"
+    },
+    "dynamicFieldLabel": {
+      "fixed_tax_cut_eligible": "定额减税对象",
+      "hometown_tax_donation": "故乡税捐款额（日元）",
+      "medical_expense": "医疗费用（日元）",
+      "earthquake_insurance_premium": "地震保险费（日元）"
+    },
+    "validation": {
+      "dependentsNonNegative": "扶养人数不可为负数",
+      "amountNonNegative": "金额不可为负数"
+    }
+  },
+  "upload": {
+    "title": "上传文件",
+    "instruction": "将文件拖放到此处，或点击浏览。",
+    "supportedFormats": "支持格式：PDF、Excel（.xlsx、.xls）、图片（PNG、JPG、GIF、BMP、TIFF）",
+    "browse": "浏览文件",
+    "processing": "处理文件中…",
+    "success": "文件处理成功。已建立收入项目。",
+    "viewAllEntries": "查看所有收入项目",
+    "uploadAnother": "上传其他文件",
+    "instructions": {
+      "title": "文件上传说明",
+      "body": "您可以上传工资单、奖金单等收入凭证（PDF、Excel或图片格式）。系统将自动提取收入类型、金额、日期等关键信息，并创建收入记录。为获得最佳效果，请确保文件清晰、文字可读。"
+    },
+    "result": {
+      "title": "提取数据",
+      "sourceFile": "文件名",
+      "incomeType": "收入类型",
+      "grossAmount": "总额",
+      "paymentDate": "支付日期",
+      "pending": "待提取"
+    },
+    "error": {
+      "unsupportedType": "不支持的文件格式。请上传 PDF、Excel 或图片文件。",
+      "uploadFailed": "上传失败。请重试。",
+      "tooLarge": "文件过大。请上传较小的文件。"
+    }
+  },
+  "calculate": {
+    "title": "税额计算",
+    "yearLabel": "税务年度",
+    "calculate": "计算税额",
+    "calculating": "计算中…",
+    "addIncome": "新增收入",
+    "editProfile": "编辑税务资料",
+    "recalculate": "重新计算",
+    "print": "打印",
+    "instructions": {
+      "title": "税额计算说明",
+      "body": "税额计算需要您已填写该年度的收入项目和税务资料。计算结果包括薪资所得、各项扣除、课税所得、所得税额，以及故乡税捐款上限建议。故乡税上限是指您可以全额抵扣的最大捐款金额（超出部分无法抵扣）。"
+    },
+    "result": {
+      "title": "计算结果",
+      "grossSalary": "薪资总额",
+      "salaryIncomeDeduction": "薪资所得扣除额",
+      "totalIncome": "总所得金额",
+      "deductions": "扣除明细",
+      "basicDeduction": "基本扣除额",
+      "socialInsuranceDeduction": "社会保险扣除额",
+      "lifeInsuranceDeduction": "人寿保险扣除额",
+      "spouseDeduction": "配偶扣除额",
+      "dependentsDeduction": "扶养扣除额",
+      "idecoDeduction": "iDeCo 扣除额",
+      "totalDeductions": "扣除合计",
+      "taxableIncome": "课税所得",
+      "incomeTax": "所得税额",
+      "furusatoLimit": "故乡税捐款上限",
+      "furusatoNote": "此为故乡税（ふるさと納税）最佳捐款上限的估算值。在此金额以内的捐款可全额抵扣。"
+    },
+    "chart": {
+      "title": "所得结构",
+      "salaryIncomeDeduction": "薪资所得扣除额",
+      "deductions": "扣除额",
+      "taxableIncome": "课税所得"
+    },
+    "error": {
+      "calculationFailed": "税额计算失败。请检查收入项目及税务资料。",
+      "noData": "无法计算。请确认此年度已有收入项目及税务资料。"
+    }
+  }
+}

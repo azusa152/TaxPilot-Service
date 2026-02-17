@@ -8,6 +8,7 @@ import { createIncomeEntry, type IncomeType } from "@/lib/api-client";
 import { inputClass } from "@/lib/utils";
 import { RequireUser } from "@/components/shared/RequireUser";
 import { FormField } from "@/components/shared/FormField";
+import { InstructionSection } from "@/components/shared/InstructionSection";
 
 const INCOME_TYPES: IncomeType[] = ["SALARY", "BONUS", "OTHER"];
 
@@ -94,6 +95,10 @@ function IncomeFormContent() {
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="text-2xl font-bold">{t("title")}</h1>
+
+      <InstructionSection title={t("instructions.title")}>
+        <p>{t("instructions.body")}</p>
+      </InstructionSection>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <FormField id="payment-date" label={t("paymentDate")} error={errors.payment_date}>

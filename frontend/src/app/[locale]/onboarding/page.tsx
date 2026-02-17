@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useUser } from "@/lib/user-context";
+import { InstructionSection } from "@/components/shared/InstructionSection";
 
 export default function OnboardingPage() {
   const t = useTranslations("onboarding");
@@ -33,6 +34,10 @@ export default function OnboardingPage() {
     <div className="mx-auto max-w-md py-16">
       <h1 className="text-2xl font-bold">{t("title")}</h1>
       <p className="mt-2 text-muted-foreground">{t("subtitle")}</p>
+
+      <InstructionSection title={t("instructions.title")}>
+        <p>{t("instructions.body")}</p>
+      </InstructionSection>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
         <div>

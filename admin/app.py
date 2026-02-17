@@ -8,15 +8,37 @@ import os
 import httpx
 import streamlit as st
 
+from i18n import load_translations, t, SUPPORTED_LOCALES
+
 API_BASE = os.environ.get("API_BASE", "http://localhost:8000")
 
 st.set_page_config(page_title="TaxPilot Admin", layout="wide")
-st.title("TaxPilot Admin Dashboard")
+
+# Language selector in sidebar
+if "locale" not in st.session_state:
+    st.session_state["locale"] = "en"
+
+locale = st.sidebar.selectbox(
+    "🌐 Language",
+    SUPPORTED_LOCALES,
+    index=SUPPORTED_LOCALES.index(st.session_state["locale"]),
+    key="locale_selector",
+)
+st.session_state["locale"] = locale
+tr = load_translations(locale)
+
+st.title(t(tr, "app.title"))
 
 
 # --- Sidebar: Navigation ---
 page = st.sidebar.radio(
-    "Navigation", ["Algorithm Registry", "LLM Configuration", "Crawler Monitor", "System Health"]
+    t(tr, "app.nav"),
+    [
+        t(tr, "pages.systemHealth"),
+        t(tr, "pages.algorithmRegistry"),
+        t(tr, "pages.llmConfiguration"),
+        t(tr, "pages.crawlerMonitor"),
+    ],
 )
 
 
@@ -44,25 +66,25 @@ def post_json(path: str, json_data: dict | None = None):
         return response.json()
 
 
-if page == "System Health":
-    st.header("System Health")
+if page == t(tr, "pages.systemHealth"):
+    st.header(t(tr, "health.title"))
     try:
         health = fetch_json("/health")
         col1, col2 = st.columns(2)
-        col1.metric("API Status", health.get("status", "unknown"))
-        col2.metric("Database", health.get("database", "unknown"))
+        col1.metric(t(tr, "health.apiStatus"), health.get("status", "unknown"))
+        col2.metric(t(tr, "health.database"), health.get("database", "unknown"))
     except Exception as e:
-        st.error(f"Failed to fetch health: {e}")
+        st.error(t(tr, "health.fetchError", error=str(e)))
 
 
-elif page == "Algorithm Registry":
-    st.header("Algorithm Registry")
+elif page == t(tr, "pages.algorithmRegistry"):
+    st.header(t(tr, "algorithm.title"))
 
     try:
         algorithms = fetch_json("/algorithms")
 
         if not algorithms:
-            st.info("No algorithms registered yet.")
+            st.info(t(tr, "algorithm.noAlgorithms"))
         else:
             for status in ["DRAFT", "ACTIVE", "ARCHIVED"]:
                 group = [a for a in algorithms if a["status"] == status]
@@ -73,29 +95,29 @@ elif page == "Algorithm Registry":
                             st.json(algo)
 
                             if algo["status"] == "DRAFT":
-                                if st.button("Activate", key=f"activate_{algo['id']}"):
+                                if st.button(t(tr, "algorithm.activateButton"), key=f"activate_{algo['id']}"):
                                     try:
                                         result = post_json(f"/algorithms/{algo['id']}/activate")
                                         st.success(
-                                            f"Activated {result['function_name']} v{result['version']}"
+                                            t(tr, "algorithm.activated", name=result['function_name'], version=result['version'])
                                         )
                                         st.rerun()
                                     except Exception as e:
-                                        st.error(f"Activation failed: {e}")
+                                        st.error(t(tr, "algorithm.activationFailed", error=str(e)))
 
     except Exception as e:
-        st.error(f"Failed to fetch algorithms: {e}")
+        st.error(t(tr, "algorithm.fetchError", error=str(e)))
 
     # Register new algorithm
     st.divider()
-    st.subheader("Register New Algorithm")
+    st.subheader(t(tr, "algorithm.register.title"))
     with st.form("register_algorithm"):
-        func_name = st.text_input("Function Name", placeholder="calc_furusato_limit")
-        version = st.text_input("Version", placeholder="2025.1")
-        code = st.text_area("Python Code", height=300, placeholder="def calc_furusato_limit(...):\n    ...")
-        law_hash = st.text_input("Source Law Hash (optional)", placeholder="sha256 of NTA page")
+        func_name = st.text_input(t(tr, "algorithm.register.functionName"), placeholder=t(tr, "algorithm.register.functionNamePlaceholder"))
+        version = st.text_input(t(tr, "algorithm.register.version"), placeholder=t(tr, "algorithm.register.versionPlaceholder"))
+        code = st.text_area(t(tr, "algorithm.register.code"), height=300, placeholder=t(tr, "algorithm.register.codePlaceholder"))
+        law_hash = st.text_input(t(tr, "algorithm.register.lawHash"), placeholder=t(tr, "algorithm.register.lawHashPlaceholder"))
 
-        if st.form_submit_button("Register as DRAFT"):
+        if st.form_submit_button(t(tr, "algorithm.register.submitButton")):
             if func_name and version and code:
                 try:
                     result = post_json(
@@ -107,53 +129,53 @@ elif page == "Algorithm Registry":
                             "source_law_hash": law_hash or None,
                         },
                     )
-                    st.success(f"Registered {result['function_name']} v{result['version']} as DRAFT")
+                    st.success(t(tr, "algorithm.register.success", name=result['function_name'], version=result['version']))
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Registration failed: {e}")
+                    st.error(t(tr, "algorithm.register.failed", error=str(e)))
             else:
-                st.warning("Please fill in Function Name, Version, and Code.")
+                st.warning(t(tr, "algorithm.register.fillRequired"))
 
 
-elif page == "LLM Configuration":
-    st.header("LLM Configuration")
+elif page == t(tr, "pages.llmConfiguration"):
+    st.header(t(tr, "llm.title"))
 
     # --- Current Config ---
-    st.subheader("Current Provider")
+    st.subheader(t(tr, "llm.currentProvider"))
     try:
         config = fetch_json("/admin/llm/config")
         if config:
             col1, col2, col3 = st.columns(3)
-            col1.metric("Provider", config["provider"])
-            col2.metric("Model", config["model_name"])
-            col3.metric("Active", "Yes" if config["is_active"] else "No")
-            st.text(f"Token: {config['masked_token']}")
-            st.text(f"Monthly Budget: ${config['monthly_budget_usd']:.2f}")
+            col1.metric(t(tr, "llm.provider"), config["provider"])
+            col2.metric(t(tr, "llm.model"), config["model_name"])
+            col3.metric(t(tr, "llm.active"), t(tr, "llm.yes") if config["is_active"] else t(tr, "llm.no"))
+            st.text(t(tr, "llm.token") + ": " + config['masked_token'])
+            st.text(t(tr, "llm.monthlyBudget") + f": ${config['monthly_budget_usd']:.2f}")
         else:
-            st.info("No LLM provider configured. Set one below.")
+            st.info(t(tr, "llm.noProvider"))
     except Exception as e:
-        st.error(f"Failed to fetch config: {e}")
+        st.error(t(tr, "llm.fetchError", error=str(e)))
 
     # --- Update Config ---
     st.divider()
-    st.subheader("Update Provider")
+    st.subheader(t(tr, "llm.updateProvider"))
 
     MODEL_SUGGESTIONS = {
         "gemini": ["gemini/gemini-2.0-flash", "gemini/gemini-1.5-pro"],
-        "openai": ["openai/gpt-4o", "openai/gpt-4-turbo"],
-        "anthropic": ["anthropic/claude-3-5-sonnet-20241022", "anthropic/claude-3-haiku-20240307"],
+        "openai": ["openai/gpt-4o", "openai/gpt-4o-mini"],
+        "anthropic": ["anthropic/claude-sonnet-4-20250514", "anthropic/claude-3-7-sonnet-20250219"],
     }
 
     # Provider selectbox outside form to trigger reactive reruns
-    provider = st.selectbox("Provider", ["openai", "gemini", "anthropic"])
+    provider = st.selectbox(t(tr, "llm.provider"), ["openai", "gemini", "anthropic"])
     suggestions = MODEL_SUGGESTIONS.get(provider, [])
 
     with st.form("llm_config"):
-        model_name = st.selectbox("Model", suggestions) if suggestions else st.text_input("Model String")
-        api_token = st.text_input("API Token", type="password")
-        budget = st.number_input("Monthly Budget (USD)", min_value=1.0, max_value=10000.0, value=50.0, step=10.0)
+        model_name = st.selectbox(t(tr, "llm.model"), suggestions) if suggestions else st.text_input(t(tr, "llm.modelString"))
+        api_token = st.text_input(t(tr, "llm.apiToken"), type="password")
+        budget = st.number_input(t(tr, "llm.monthlyBudgetUsd"), min_value=1.0, max_value=10000.0, value=50.0, step=10.0)
 
-        if st.form_submit_button("Save Configuration"):
+        if st.form_submit_button(t(tr, "llm.saveButton")):
             if api_token:
                 try:
                     result = put_json(
@@ -165,61 +187,70 @@ elif page == "LLM Configuration":
                             "monthly_budget_usd": budget,
                         },
                     )
-                    st.success(f"Saved: {result['provider']} / {result['model_name']}")
+                    st.success(t(tr, "llm.saved", provider=result['provider'], model=result['model_name']))
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Failed to save config: {e}")
+                    st.error(t(tr, "llm.saveFailed", error=str(e)))
             else:
-                st.warning("Please enter an API token.")
+                st.warning(t(tr, "llm.enterToken"))
 
     # --- Test Connection ---
     st.divider()
-    st.subheader("Test Connection")
-    if st.button("Test LLM Connection"):
-        with st.spinner("Testing..."):
+    st.subheader(t(tr, "llm.testConnection"))
+    if st.button(t(tr, "llm.testButton")):
+        with st.spinner(t(tr, "llm.testing")):
             try:
                 with httpx.Client(base_url=API_BASE, timeout=30.0) as client:
                     response = client.post("/admin/llm/test")
-                    response.raise_for_status()
-                    result = response.json()
-                st.success(f"Status: {result['status']}")
-                col1, col2 = st.columns(2)
-                col1.metric("Model", result["model"])
-                col2.metric("Latency", f"{result['latency_seconds']}s")
-                st.text(f"Response: {result['response']}")
+                    if response.status_code >= 400:
+                        error_body = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
+                        detail = error_body.get("detail", response.text)
+                        st.error(t(tr, "llm.testFailed", error=detail))
+                    else:
+                        result = response.json()
+                        st.success(t(tr, "llm.status") + f": {result['status']}")
+                        col1, col2 = st.columns(2)
+                        col1.metric(t(tr, "llm.model"), result["model"])
+                        col2.metric(t(tr, "llm.latency"), t(tr, "llm.latencySeconds", seconds=result['latency_seconds']))
+                        st.text(t(tr, "llm.response") + f": {result['response']}")
             except Exception as e:
-                st.error(f"Connection test failed: {e}")
+                st.error(t(tr, "llm.testFailed", error=str(e)))
 
     # --- Usage Dashboard ---
     st.divider()
-    st.subheader("Usage Dashboard")
+    st.subheader(t(tr, "llm.usage.title"))
     try:
         usage = fetch_json("/admin/llm/usage")
         col1, col2, col3 = st.columns(3)
-        col1.metric("Total Calls", usage["total_calls"])
-        col2.metric("Monthly Cost", f"${usage['monthly_total_usd']:.4f}")
-        col3.metric("Budget Remaining", f"${usage['budget_remaining_usd']:.2f}")
+        col1.metric(t(tr, "llm.usage.totalCalls"), usage["total_calls"])
+        col2.metric(t(tr, "llm.usage.monthlyCost"), f"${usage['monthly_total_usd']:.4f}")
+        col3.metric(t(tr, "llm.usage.budgetRemaining"), f"${usage['budget_remaining_usd']:.2f}")
 
-        st.text(f"Prompt tokens: {usage['total_prompt_tokens']:,}")
-        st.text(f"Completion tokens: {usage['total_completion_tokens']:,}")
+        st.text(t(tr, "llm.usage.promptTokens", count=f"{usage['total_prompt_tokens']:,}"))
+        st.text(t(tr, "llm.usage.completionTokens", count=f"{usage['total_completion_tokens']:,}"))
 
         if usage["daily_breakdown"]:
             st.bar_chart(
                 data={row["date"]: row["cost_usd"] for row in usage["daily_breakdown"]},
             )
     except Exception as e:
-        st.error(f"Failed to fetch usage: {e}")
+        st.error(t(tr, "llm.usage.fetchError", error=str(e)))
 
 
-elif page == "Crawler Monitor":
-    st.header("Three-Layer Crawler Monitor")
+elif page == t(tr, "pages.crawlerMonitor"):
+    st.header(t(tr, "crawler.title"))
 
     # --- Layer Tabs ---
-    layer_tab = st.tabs(["Layer 1: NTA Tax Answer", "Layer 2: MOF Tax Reform", "Layer 3: e-Gov Law", "All Layers"])
+    layer_tab = st.tabs([
+        t(tr, "crawler.layers.ntaTaxAnswer"),
+        t(tr, "crawler.layers.mofTaxReform"),
+        t(tr, "crawler.layers.egovLaw"),
+        t(tr, "crawler.layers.all")
+    ])
 
     # --- 1. Layer 1: NTA Tax Answer ---
     with layer_tab[0]:
-        st.subheader("NTA Tax Answer Crawler")
+        st.subheader(t(tr, "crawler.nta.title"))
 
         # Health Overview
         try:
@@ -228,172 +259,172 @@ elif page == "Crawler Monitor":
             status_emoji = {"healthy": "✅ OK", "degraded": "⚠️ WARN", "error": "❌ ERR"}.get(status, "?")
 
             col1, col2, col3 = st.columns(3)
-            col1.metric("Status", status_emoji)
-            col2.metric("Active Pages", f"{health['active_target_pages']} / {health['total_target_pages']}")
+            col1.metric(t(tr, "crawler.nta.status"), status_emoji)
+            col2.metric(t(tr, "crawler.nta.activePages"), t(tr, "crawler.nta.activePagesCount", active=health['active_target_pages'], total=health['total_target_pages']))
 
             if health["last_run"]:
                 last = health["last_run"]
                 col3.metric(
-                    "Last Run",
-                    f"{last['pages_checked']} checked, {last['pages_changed']} changed",
+                    t(tr, "crawler.nta.lastRun"),
+                    t(tr, "crawler.nta.lastRunInfo", checked=last['pages_checked'], changed=last['pages_changed']),
                 )
-                st.text(f"Last run: {last['started_at']} ({last['trigger']})")
+                st.text(t(tr, "crawler.nta.lastRunTime", time=last['started_at'], trigger=last['trigger']))
                 if last["pages_failed"] > 0:
-                    st.warning(f"{last['pages_failed']} page(s) failed in last run")
+                    st.warning(t(tr, "crawler.nta.pagesFailed", count=last['pages_failed']))
             else:
-                col3.metric("Last Run", "Never")
-                st.info("No crawl runs yet. Click 'Run Now' to start.")
+                col3.metric(t(tr, "crawler.nta.lastRun"), t(tr, "crawler.nta.never"))
+                st.info(t(tr, "crawler.nta.noRuns"))
 
         except Exception as e:
-            st.error(f"Failed to fetch crawler health: {e}")
+            st.error(t(tr, "crawler.nta.fetchError", error=str(e)))
 
         # Run Now button
-        if st.button("Run NTA Crawler Now", key="nta_run"):
-            with st.spinner("Crawling NTA pages..."):
+        if st.button(t(tr, "crawler.nta.runButton"), key="nta_run"):
+            with st.spinner(t(tr, "crawler.nta.running")):
                 try:
                     changes = post_json("/admin/nta/check-now")
                     if changes:
-                        st.success(f"Crawl complete: {len(changes)} change(s) detected!")
+                        st.success(t(tr, "crawler.nta.completeChanges", count=len(changes)))
                         for change in changes:
-                            st.write(f"- **{change['page_name']}**: hash changed to `{change['new_hash'][:12]}...`")
+                            st.write(t(tr, "crawler.nta.changeInfo", page=change['page_name'], hash=change['new_hash'][:12]))
                     else:
-                        st.success("Crawl complete: no changes detected.")
+                        st.success(t(tr, "crawler.nta.completeNoChanges"))
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Crawl failed: {e}")
+                    st.error(t(tr, "crawler.nta.runFailed", error=str(e)))
 
     # --- 2. Layer 2: MOF Tax Reform ---
     with layer_tab[1]:
-        st.subheader("MOF Tax Reform Monitor")
-        st.info("Monitors Ministry of Finance Tax Reform PDF documents (weekly schedule)")
+        st.subheader(t(tr, "crawler.mof.title"))
+        st.info(t(tr, "crawler.mof.description"))
 
-        if st.button("Run MOF Crawler Now", key="mof_run"):
-            with st.spinner("Checking MOF Tax Reform page..."):
+        if st.button(t(tr, "crawler.mof.runButton"), key="mof_run"):
+            with st.spinner(t(tr, "crawler.mof.running")):
                 try:
                     changes = post_json("/admin/nta/check-mof")
                     if changes:
-                        st.success(f"MOF crawl complete: {len(changes)} change(s) detected!")
+                        st.success(t(tr, "crawler.mof.completeChanges", count=len(changes)))
                         for change in changes:
-                            st.write(f"- **{change['page_name']}**: `{change['new_hash'][:12]}...`")
+                            st.write(t(tr, "crawler.mof.changeInfo", page=change['page_name'], hash=change['new_hash'][:12]))
                     else:
-                        st.success("MOF crawl complete: no changes detected.")
+                        st.success(t(tr, "crawler.mof.completeNoChanges"))
                     st.rerun()
                 except Exception as e:
-                    st.error(f"MOF crawl failed: {e}")
+                    st.error(t(tr, "crawler.mof.runFailed", error=str(e)))
 
     # --- 3. Layer 3: e-Gov Law ---
     with layer_tab[2]:
-        st.subheader("e-Gov Law API Client")
-        st.info("Monitors Income Tax Act and Local Tax Act via e-Gov API (monthly schedule)")
+        st.subheader(t(tr, "crawler.egov.title"))
+        st.info(t(tr, "crawler.egov.description"))
 
-        if st.button("Run e-Gov Crawler Now", key="egov_run"):
-            with st.spinner("Checking e-Gov Law API..."):
+        if st.button(t(tr, "crawler.egov.runButton"), key="egov_run"):
+            with st.spinner(t(tr, "crawler.egov.running")):
                 try:
                     changes = post_json("/admin/nta/check-egov")
                     if changes:
-                        st.success(f"e-Gov crawl complete: {len(changes)} change(s) detected!")
+                        st.success(t(tr, "crawler.egov.completeChanges", count=len(changes)))
                         for change in changes:
-                            st.write(f"- **{change['page_name']}**: `{change['new_hash'][:12]}...`")
+                            st.write(t(tr, "crawler.egov.changeInfo", page=change['page_name'], hash=change['new_hash'][:12]))
                     else:
-                        st.success("e-Gov crawl complete: no changes detected.")
+                        st.success(t(tr, "crawler.egov.completeNoChanges"))
                     st.rerun()
                 except Exception as e:
-                    st.error(f"e-Gov crawl failed: {e}")
+                    st.error(t(tr, "crawler.egov.runFailed", error=str(e)))
 
     # --- 4. All Layers ---
     with layer_tab[3]:
-        st.subheader("Run All Crawlers")
-        st.info("Trigger all three layers sequentially: NTA → MOF → e-Gov")
+        st.subheader(t(tr, "crawler.allLayers.title"))
+        st.info(t(tr, "crawler.allLayers.description"))
 
-        if st.button("Run All Crawlers Now", key="all_run"):
-            with st.spinner("Running all three crawler layers..."):
+        if st.button(t(tr, "crawler.allLayers.runButton"), key="all_run"):
+            with st.spinner(t(tr, "crawler.allLayers.running")):
                 try:
                     result = post_json("/admin/nta/check-all")
-                    st.success(f"All crawlers complete: {result['total_changes']} total change(s) detected!")
+                    st.success(t(tr, "crawler.allLayers.completeChanges", total=result['total_changes']))
                     
                     col1, col2, col3 = st.columns(3)
-                    col1.metric("NTA Changes", len(result['nta_changes']))
-                    col2.metric("MOF Changes", len(result['mof_changes']))
-                    col3.metric("e-Gov Changes", len(result['egov_changes']))
+                    col1.metric(t(tr, "crawler.allLayers.ntaChanges"), len(result['nta_changes']))
+                    col2.metric(t(tr, "crawler.allLayers.mofChanges"), len(result['mof_changes']))
+                    col3.metric(t(tr, "crawler.allLayers.egovChanges"), len(result['egov_changes']))
                     
                     if result['nta_changes']:
-                        st.write("**NTA Changes:**")
+                        st.write(t(tr, "crawler.allLayers.ntaChangesList"))
                         for change in result['nta_changes']:
                             st.write(f"- {change['page_name']}")
                     if result['mof_changes']:
-                        st.write("**MOF Changes:**")
+                        st.write(t(tr, "crawler.allLayers.mofChangesList"))
                         for change in result['mof_changes']:
                             st.write(f"- {change['page_name']}")
                     if result['egov_changes']:
-                        st.write("**e-Gov Changes:**")
+                        st.write(t(tr, "crawler.allLayers.egovChangesList"))
                         for change in result['egov_changes']:
                             st.write(f"- {change['page_name']}")
                     
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Crawl failed: {e}")
+                    st.error(t(tr, "crawler.allLayers.runFailed", error=str(e)))
 
     # --- Target Pages Management (shared) ---
     st.divider()
-    st.subheader("Target Pages (All Layers)")
+    st.subheader(t(tr, "crawler.targets.title"))
 
     try:
         targets = fetch_json("/admin/nta/targets")
         if targets:
             # Group by source_type
-            nta_targets = [t for t in targets if t.get("source_type") == "NTA_TAX_ANSWER"]
-            mof_targets = [t for t in targets if t.get("source_type") == "MOF_TAX_REFORM"]
-            egov_targets = [t for t in targets if t.get("source_type") == "EGOV_LAW"]
+            nta_targets = [tgt for tgt in targets if tgt.get("source_type") == "NTA_TAX_ANSWER"]
+            mof_targets = [tgt for tgt in targets if tgt.get("source_type") == "MOF_TAX_REFORM"]
+            egov_targets = [tgt for tgt in targets if tgt.get("source_type") == "EGOV_LAW"]
             
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.write(f"**Layer 1 (NTA): {len(nta_targets)} pages**")
+                st.write(t(tr, "crawler.targets.layer1", count=len(nta_targets)))
                 for target in nta_targets:
                     status_label = "✅" if target["is_active"] else "❌"
                     with st.expander(f"{status_label} {target['name']}"):
-                        st.text(f"URL: {target['url']}")
-                        st.text(f"Description: {target.get('description', 'N/A')}")
-                        st.text(f"Check interval: {target['check_interval_hours']}h")
+                        st.text(t(tr, "crawler.targets.url", url=target['url']))
+                        st.text(t(tr, "crawler.targets.description", desc=target.get('description', 'N/A')))
+                        st.text(t(tr, "crawler.targets.checkInterval", hours=target['check_interval_hours']))
             
             with col2:
-                st.write(f"**Layer 2 (MOF): {len(mof_targets)} pages**")
+                st.write(t(tr, "crawler.targets.layer2", count=len(mof_targets)))
                 for target in mof_targets:
                     status_label = "✅" if target["is_active"] else "❌"
                     with st.expander(f"{status_label} {target['name']}"):
-                        st.text(f"URL: {target['url']}")
-                        st.text(f"Description: {target.get('description', 'N/A')}")
-                        st.text(f"Check interval: {target['check_interval_hours']}h")
+                        st.text(t(tr, "crawler.targets.url", url=target['url']))
+                        st.text(t(tr, "crawler.targets.description", desc=target.get('description', 'N/A')))
+                        st.text(t(tr, "crawler.targets.checkInterval", hours=target['check_interval_hours']))
             
             with col3:
-                st.write(f"**Layer 3 (e-Gov): {len(egov_targets)} pages**")
+                st.write(t(tr, "crawler.targets.layer3", count=len(egov_targets)))
                 for target in egov_targets:
                     status_label = "✅" if target["is_active"] else "❌"
                     with st.expander(f"{status_label} {target['name']}"):
-                        st.text(f"URL: {target['url']}")
-                        st.text(f"Description: {target.get('description', 'N/A')}")
-                        st.text(f"Check interval: {target['check_interval_hours']}h")
+                        st.text(t(tr, "crawler.targets.url", url=target['url']))
+                        st.text(t(tr, "crawler.targets.description", desc=target.get('description', 'N/A')))
+                        st.text(t(tr, "crawler.targets.checkInterval", hours=target['check_interval_hours']))
         else:
-            st.info("No target pages configured. Add one below.")
+            st.info(t(tr, "crawler.targets.noTargets"))
     except Exception as e:
-        st.error(f"Failed to fetch targets: {e}")
+        st.error(t(tr, "crawler.targets.fetchError", error=str(e)))
 
     # Add new target page
     st.divider()
-    st.subheader("Add / Update Target Page")
+    st.subheader(t(tr, "crawler.targets.addUpdate"))
     with st.form("add_target"):
-        name = st.text_input("Page Name", placeholder="income_tax_rates")
-        url = st.text_input("URL", placeholder="https://www.nta.go.jp/...")
-        description = st.text_input("Description", placeholder="Income tax rate table")
+        name = st.text_input(t(tr, "crawler.targets.pageName"), placeholder=t(tr, "crawler.targets.pageNamePlaceholder"))
+        url = st.text_input(t(tr, "crawler.targets.urlInput"), placeholder=t(tr, "crawler.targets.urlPlaceholder"))
+        description = st.text_input(t(tr, "crawler.targets.descriptionInput"), placeholder=t(tr, "crawler.targets.descriptionPlaceholder"))
         source_type = st.selectbox(
-            "Source Type",
+            t(tr, "crawler.targets.sourceType"),
             options=["NTA_TAX_ANSWER", "MOF_TAX_REFORM", "EGOV_LAW"],
-            help="Layer 1: NTA Tax Answer | Layer 2: MOF Tax Reform | Layer 3: e-Gov Law API",
+            help=t(tr, "crawler.targets.sourceTypeHelp"),
         )
-        check_interval = st.number_input("Check Interval (hours)", min_value=1, max_value=720, value=24)
-        is_active = st.checkbox("Active", value=True)
+        check_interval = st.number_input(t(tr, "crawler.targets.checkIntervalHours"), min_value=1, max_value=720, value=24)
+        is_active = st.checkbox(t(tr, "crawler.targets.activeCheckbox"), value=True)
 
-        if st.form_submit_button("Save Target Page"):
+        if st.form_submit_button(t(tr, "crawler.targets.saveButton")):
             if name and url:
                 try:
                     result = put_json(
@@ -407,20 +438,20 @@ elif page == "Crawler Monitor":
                             "is_active": is_active,
                         },
                     )
-                    st.success(f"Saved target page: {result['name']}")
+                    st.success(t(tr, "crawler.targets.saved", name=result['name']))
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Failed to save target: {e}")
+                    st.error(t(tr, "crawler.targets.saveFailed", error=str(e)))
             else:
-                st.warning("Please fill in Page Name and URL.")
+                st.warning(t(tr, "crawler.targets.fillRequired"))
 
     # --- 3. Snapshot History ---
     st.divider()
-    st.subheader("Snapshot History")
+    st.subheader(t(tr, "crawler.snapshots.title"))
 
     col1, col2 = st.columns(2)
-    filter_page = col1.text_input("Filter by page name", placeholder="(all pages)")
-    changes_only = col2.checkbox("Changes only")
+    filter_page = col1.text_input(t(tr, "crawler.snapshots.filterByPage"), placeholder=t(tr, "crawler.snapshots.filterPlaceholder"))
+    changes_only = col2.checkbox(t(tr, "crawler.snapshots.changesOnly"))
 
     try:
         params = "?"
@@ -434,38 +465,40 @@ elif page == "Crawler Monitor":
 
         if snapshots:
             for snap in snapshots:
-                status_icon = {"SUCCESS": "OK", "FAILED": "FAIL", "TIMEOUT": "TIMEOUT"}.get(
-                    snap["status"], "?"
-                )
+                status_icon = {
+                    "SUCCESS": t(tr, "crawler.snapshots.status.success"),
+                    "FAILED": t(tr, "crawler.snapshots.status.failed"),
+                    "TIMEOUT": t(tr, "crawler.snapshots.status.timeout")
+                }.get(snap["status"], "?")
                 label = f"{snap['target_page_name']} | {snap['fetched_at']} | {status_icon}"
                 if snap["response_time_ms"]:
                     label += f" | {snap['response_time_ms']}ms"
 
                 with st.expander(label):
-                    st.text(f"Hash: {snap['content_hash']}")
-                    st.text(f"URL: {snap['target_page_url']}")
+                    st.text(t(tr, "crawler.snapshots.hash", hash=snap['content_hash']))
+                    st.text(t(tr, "crawler.snapshots.url", url=snap['target_page_url']))
 
                     if snap.get("error_message"):
-                        st.error(f"Error: {snap['error_message']}")
+                        st.error(t(tr, "crawler.snapshots.error", error=snap['error_message']))
 
                     if snap.get("fit_markdown"):
-                        tab1, tab2 = st.tabs(["Rendered Markdown", "Raw (copyable)"])
+                        tab1, tab2 = st.tabs([t(tr, "crawler.snapshots.renderedMarkdown"), t(tr, "crawler.snapshots.rawCopyable")])
                         with tab1:
                             st.markdown(snap["fit_markdown"][:5000])
                         with tab2:
                             st.code(snap["fit_markdown"], language="markdown")
 
                     if snap.get("extracted_tables"):
-                        st.subheader("Extracted Tables")
+                        st.subheader(t(tr, "crawler.snapshots.extractedTables"))
                         st.json(snap["extracted_tables"])
         else:
-            st.info("No snapshots yet.")
+            st.info(t(tr, "crawler.snapshots.noSnapshots"))
     except Exception as e:
-        st.error(f"Failed to fetch snapshots: {e}")
+        st.error(t(tr, "crawler.snapshots.fetchError", error=str(e)))
 
     # --- 4. Crawl Run Log ---
     st.divider()
-    st.subheader("Crawl Run Log")
+    st.subheader(t(tr, "crawler.runLog.title"))
 
     try:
         runs = fetch_json("/admin/nta/runs")
@@ -482,13 +515,13 @@ elif page == "Crawler Monitor":
                 )
                 st.text(label)
         else:
-            st.info("No crawl runs yet.")
+            st.info(t(tr, "crawler.runLog.noRuns"))
     except Exception as e:
-        st.error(f"Failed to fetch runs: {e}")
+        st.error(t(tr, "crawler.runLog.fetchError", error=str(e)))
 
     # --- 5. Error Log ---
     st.divider()
-    st.subheader("Error Log")
+    st.subheader(t(tr, "crawler.errorLog.title"))
 
     try:
         # Fetch all snapshots and filter to failed/timed out
@@ -503,6 +536,6 @@ elif page == "Crawler Monitor":
                     f"Error: {err.get('error_message', 'N/A')}"
                 )
         else:
-            st.success("No errors in recent snapshots.")
+            st.success(t(tr, "crawler.errorLog.noErrors"))
     except Exception as e:
-        st.error(f"Failed to fetch error log: {e}")
+        st.error(t(tr, "crawler.errorLog.fetchError", error=str(e)))

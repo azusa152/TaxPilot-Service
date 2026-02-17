@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
+import { InstructionSection } from "@/components/shared/InstructionSection";
 
 export async function generateMetadata({
   params,
@@ -28,6 +29,13 @@ export default function HomePage() {
       <p className="mt-4 max-w-lg text-center text-muted-foreground">
         {t("welcomeSubtitle")}
       </p>
+      
+      <div className="mt-6 w-full max-w-2xl">
+        <InstructionSection title={t("instructions.title")}>
+          <p>{t("instructions.body")}</p>
+        </InstructionSection>
+      </div>
+
       <Link
         href="/income"
         className="mt-8 inline-flex items-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"

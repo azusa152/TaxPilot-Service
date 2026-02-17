@@ -12,6 +12,7 @@ import {
 import { formatJPY } from "@/lib/format";
 import { RequireUser } from "@/components/shared/RequireUser";
 import { FileUpload } from "@/components/shared/FileUpload";
+import { InstructionSection } from "@/components/shared/InstructionSection";
 
 function UploadContent() {
   const t = useTranslations("upload");
@@ -56,6 +57,10 @@ function UploadContent() {
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="mb-6 text-2xl font-bold">{t("title")}</h1>
+
+      <InstructionSection title={t("instructions.title")}>
+        <p>{t("instructions.body")}</p>
+      </InstructionSection>
 
       {!result && (
         <>

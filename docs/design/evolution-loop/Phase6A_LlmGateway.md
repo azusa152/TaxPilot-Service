@@ -34,8 +34,8 @@ Instead of building custom adapters for each LLM provider, we use **LiteLLM** (M
 | Gemini | `gemini/gemini-1.5-pro` | Higher quality |
 | OpenAI | `openai/gpt-4o` | Best general-purpose |
 | OpenAI | `openai/gpt-4-turbo` | Balanced cost/quality |
-| Claude | `anthropic/claude-3-5-sonnet-20241022` | Strong reasoning |
-| Claude | `anthropic/claude-3-haiku-20240307` | Fast, low cost |
+| Claude | `anthropic/claude-sonnet-4-20250514` | Strong reasoning |
+| Claude | `anthropic/claude-3-7-sonnet-20250219` | Balanced cost/quality |
 
 ---
 

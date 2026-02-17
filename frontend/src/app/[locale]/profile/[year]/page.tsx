@@ -20,6 +20,7 @@ import { FormSkeleton } from "@/components/shared/FormSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { FormField } from "@/components/shared/FormField";
 import { DynamicFormRenderer } from "@/components/shared/DynamicFormRenderer";
+import { InstructionSection } from "@/components/shared/InstructionSection";
 
 interface FormErrors {
   dependents_count?: string;
@@ -240,6 +241,10 @@ function ProfileFormContent() {
           </select>
         </div>
       </div>
+
+      <InstructionSection title={t("instructions.title")}>
+        <p>{t("instructions.body")}</p>
+      </InstructionSection>
 
       {isNewProfile && (
         <p className="mb-4 text-sm text-muted-foreground">{t("notFound")}</p>
