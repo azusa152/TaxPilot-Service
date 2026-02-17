@@ -1,19 +1,18 @@
-"""MOF (Ministry of Finance) Tax Reform monitor.
+"""MOF (Ministry of Finance) Tax Reform Monitor.
 
-Monitors the MOF Tax Reform outline page for new PDF documents,
-downloads them, and converts them to markdown for LLM analysis.
+Monitors the MOF Tax Reform outline page for new PDF releases.
+Uses httpx + BeautifulSoup to extract PDF links and MarkItDown to convert PDFs to Markdown.
+Stores results in the same NtaPageSnapshot table with source_type='MOF_TAX_REFORM'.
 """
 
 import hashlib
-import re
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
-from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
-from crawl4ai.content_filter_strategy import PruningContentFilter
-from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+from bs4 import BeautifulSoup
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,18 +24,12 @@ from src.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-# Crawl4AI v0.8 configuration
-BROWSER_CONFIG = BrowserConfig(headless=True)
-CRAWL_CONFIG = CrawlerRunConfig(
-    markdown_generator=DefaultMarkdownGenerator(content_filter=PruningContentFilter(threshold=0.4))
-)
-
 
 class MofReformMonitor:
-    """Monitors MOF Tax Reform page for new PDF documents.
+    """Monitors MOF Tax Reform outline page for new PDF releases.
 
-    Uses Crawl4AI to fetch the outline page, extracts PDF links from markdown,
-    downloads new PDFs via httpx, and converts them to markdown via MarkItDown.
+    Uses httpx to fetch HTML, BeautifulSoup to extract PDF links, and MarkItDown
+    to convert PDFs to Markdown. Detects changes by hashing the list of PDF links.
     """
 
     def __init__(self, db: AsyncSession):
@@ -44,79 +37,48 @@ class MofReformMonitor:
         self.markitdown = MarkItDownAdapter()
 
     async def check_for_changes(self, trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL) -> list[NtaPageChange]:
-        """Check MOF Tax Reform page for new PDF documents.
+        """Crawl MOF Tax Reform outline page and detect changes.
 
         Args:
             trigger: How this check was triggered.
 
         Returns:
-            List of NtaPageChange objects for new PDFs detected.
+            List of NtaPageChange objects for pages where content changed.
         """
         run = NtaCrawlerRun(trigger=trigger)
         self.db.add(run)
         await self.db.flush()
 
-        # Get the MOF target page
+        # Get all MOF target pages
         result = await self.db.execute(
             select(NtaTargetPage).where(
                 NtaTargetPage.is_active == True,  # noqa: E712
                 NtaTargetPage.source_type == CrawlerSourceType.MOF_TAX_REFORM,
             )
         )
-        mof_page = result.scalar_one_or_none()
+        target_pages = result.scalars().all()
 
-        if not mof_page:
-            logger.warning("MOF Tax Reform target page not found")
+        if not target_pages:
+            logger.warning("No active MOF target pages found")
             run.completed_at = datetime.now(UTC)
             await self.db.flush()
             return []
 
         changes: list[NtaPageChange] = []
 
-        try:
-            # Crawl the MOF outline page
-            async with AsyncWebCrawler(config=BROWSER_CONFIG) as crawler:
-                page_result = await crawler.arun(mof_page.url, config=CRAWL_CONFIG)
+        for page in target_pages:
+            run.pages_checked += 1
+            start_time = time.time()
 
-                if not page_result.success:
-                    logger.error(f"Failed to crawl MOF page: {page_result.error_message}")
-                    run.pages_checked = 1
-                    run.pages_failed = 1
-                    await self._store_failed_snapshot(mof_page, run.id, page_result.error_message or "Unknown error")
-                else:
-                    run.pages_checked = 1
-                    # Extract PDF links from markdown
-                    pdf_links = self._extract_pdf_links(page_result.markdown.fit_markdown, mof_page.url)
-                    logger.info(f"Found {len(pdf_links)} PDF links on MOF page")
-
-                    # Store page snapshot
-                    page_hash = hashlib.sha256(page_result.markdown.fit_markdown.encode()).hexdigest()
-                    page_snapshot = NtaPageSnapshot(
-                        target_page_id=mof_page.id,
-                        crawler_run_id=run.id,
-                        content_hash=page_hash,
-                        raw_html=page_result.html,
-                        raw_markdown=page_result.markdown.raw_markdown,
-                        fit_markdown=page_result.markdown.fit_markdown,
-                        status=SnapshotStatus.SUCCESS,
-                    )
-                    self.db.add(page_snapshot)
-                    await self.db.flush()
-
-                    # Check for new PDFs
-                    for pdf_url in pdf_links:
-                        try:
-                            change = await self._process_pdf(mof_page, pdf_url, run.id)
-                            if change:
-                                changes.append(change)
-                                run.pages_changed += 1
-                        except Exception:
-                            logger.exception(f"Failed to process PDF {pdf_url}")
-                            run.pages_failed += 1
-
-        except Exception as e:
-            logger.exception(f"MOF crawl failed: {e}")
-            run.pages_failed = 1
+            try:
+                change = await self._process_mof_page(page, run.id, start_time)
+                if change:
+                    changes.append(change)
+                    run.pages_changed += 1
+            except Exception as e:
+                logger.exception(f"Failed to process MOF page {page.name}: {e}")
+                run.pages_failed += 1
+                await self._store_failed_snapshot(page, run.id, str(e))
 
         run.completed_at = datetime.now(UTC)
         await self.db.flush()
@@ -127,103 +89,131 @@ class MofReformMonitor:
         )
         return changes
 
-    def _extract_pdf_links(self, markdown: str, base_url: str) -> list[str]:
-        """Extract PDF links from markdown content.
+    async def _process_mof_page(self, page: NtaTargetPage, run_id: int, start_time: float) -> NtaPageChange | None:
+        """Process a single MOF outline page and check for changes.
+
+        Returns NtaPageChange if content has changed, None otherwise.
+        """
+        # Fetch HTML
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(page.url)
+            response.raise_for_status()
+            html_content = response.text
+
+        # Extract PDF links using BeautifulSoup
+        soup = BeautifulSoup(html_content, "html.parser")
+        pdf_links = self._extract_pdf_links(soup, page.url)
+
+        if not pdf_links:
+            logger.warning(f"No PDF links found on {page.name}")
+
+        # Hash the list of PDF URLs for change detection
+        pdf_links_str = "\n".join(sorted(pdf_links))
+        page_hash = hashlib.sha256(pdf_links_str.encode()).hexdigest()
+
+        # Get previous snapshot hash
+        prev_result = await self.db.execute(
+            select(NtaPageSnapshot)
+            .where(
+                NtaPageSnapshot.target_page_id == page.id,
+                NtaPageSnapshot.status == SnapshotStatus.SUCCESS,
+            )
+            .order_by(NtaPageSnapshot.fetched_at.desc())
+            .limit(1)
+        )
+        prev_snapshot = prev_result.scalar_one_or_none()
+        prev_hash = prev_snapshot.content_hash if prev_snapshot else None
+
+        # Download and convert the first PDF (or all PDFs if needed)
+        # For MVP, we'll just convert the first PDF found
+        fit_markdown = ""
+        if pdf_links:
+            fit_markdown = await self._download_and_convert_pdf(pdf_links[0])
+
+        response_time_ms = int((time.time() - start_time) * 1000)
+
+        # Store new snapshot
+        snapshot = NtaPageSnapshot(
+            target_page_id=page.id,
+            crawler_run_id=run_id,
+            content_hash=page_hash,
+            raw_html=html_content,
+            raw_markdown=pdf_links_str,  # Store list of PDF URLs
+            fit_markdown=fit_markdown,
+            extracted_tables={"pdf_links": pdf_links},
+            status=SnapshotStatus.SUCCESS,
+            response_time_ms=response_time_ms,
+        )
+        self.db.add(snapshot)
+        await self.db.flush()
+
+        # Check for change
+        if prev_hash and prev_hash != page_hash:
+            logger.info(f"MOF change detected on {page.name}: {prev_hash[:8]}...{page_hash[:8]}")
+            return NtaPageChange(
+                page_name=page.name,
+                page_url=page.url,
+                previous_hash=prev_hash,
+                new_hash=page_hash,
+                snapshot_id=snapshot.id,
+            )
+        elif prev_hash is None:
+            logger.info(f"First MOF snapshot for {page.name}: {page_hash[:8]}")
+
+        return None
+
+    def _extract_pdf_links(self, soup: BeautifulSoup, base_url: str) -> list[str]:
+        """Extract all PDF links from the HTML.
 
         Args:
-            markdown: Markdown content from Crawl4AI.
+            soup: BeautifulSoup parsed HTML.
             base_url: Base URL for resolving relative links.
 
         Returns:
             List of absolute PDF URLs.
         """
-        # Match markdown links: [text](url) where url ends with .pdf
-        pattern = r"\[([^\]]+)\]\(([^\)]+\.pdf)\)"
-        matches = re.findall(pattern, markdown, re.IGNORECASE)
-
         pdf_links = []
-        for _, url in matches:
-            # Convert relative URLs to absolute
-            if url.startswith("http"):
-                pdf_links.append(url)
-            elif url.startswith("/"):
-                # Absolute path on same domain
-                from urllib.parse import urlparse
+        for link in soup.find_all("a", href=True):
+            href = link["href"]
+            if href.endswith(".pdf"):
+                # Resolve relative URLs
+                if not href.startswith("http"):
+                    from urllib.parse import urljoin
 
-                parsed = urlparse(base_url)
-                pdf_links.append(f"{parsed.scheme}://{parsed.netloc}{url}")
-            else:
-                # Relative path
-                base_path = base_url.rsplit("/", 1)[0]
-                pdf_links.append(f"{base_path}/{url}")
+                    href = urljoin(base_url, href)
+                pdf_links.append(href)
+        return pdf_links
 
-        return list(set(pdf_links))  # Remove duplicates
-
-    async def _process_pdf(self, parent_page: NtaTargetPage, pdf_url: str, run_id: int) -> NtaPageChange | None:
-        """Download and process a PDF document.
+    async def _download_and_convert_pdf(self, pdf_url: str) -> str:
+        """Download a PDF and convert it to Markdown.
 
         Args:
-            parent_page: The MOF outline page.
             pdf_url: URL of the PDF to download.
-            run_id: Crawler run ID.
 
         Returns:
-            NtaPageChange if this is a new PDF, None otherwise.
+            Markdown content.
         """
-        # Check if we've seen this PDF before
-        pdf_hash = hashlib.sha256(pdf_url.encode()).hexdigest()
-        prev_result = await self.db.execute(
-            select(NtaPageSnapshot)
-            .where(
-                NtaPageSnapshot.target_page_id == parent_page.id,
-                NtaPageSnapshot.content_hash == pdf_hash,
-                NtaPageSnapshot.status == SnapshotStatus.SUCCESS,
-            )
-            .limit(1)
-        )
-        if prev_result.scalar_one_or_none():
-            logger.debug(f"PDF already processed: {pdf_url}")
-            return None
-
-        # Download PDF
-        logger.info(f"Downloading new PDF: {pdf_url}")
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.get(pdf_url, follow_redirects=True)
-            response.raise_for_status()
-            pdf_content = response.content
-
-        # Save to temp file and convert to markdown
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
-            tmp_file.write(pdf_content)
-            tmp_path = tmp_file.name
-
         try:
-            pdf_markdown = self.markitdown.convert_to_markdown(tmp_path)
-            logger.info(f"Converted PDF to markdown: {len(pdf_markdown)} chars")
+            # Download PDF to temp file
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.get(pdf_url)
+                response.raise_for_status()
 
-            # Store snapshot with PDF content
-            snapshot = NtaPageSnapshot(
-                target_page_id=parent_page.id,
-                crawler_run_id=run_id,
-                content_hash=pdf_hash,
-                raw_markdown=f"# PDF Source\n\nURL: {pdf_url}\n\n",
-                fit_markdown=pdf_markdown,
-                status=SnapshotStatus.SUCCESS,
-            )
-            self.db.add(snapshot)
-            await self.db.flush()
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+                    temp_file.write(response.content)
+                    temp_path = temp_file.name
 
-            logger.info(f"New PDF detected: {pdf_url}")
-            return NtaPageChange(
-                page_name=f"{parent_page.name}_pdf",
-                page_url=pdf_url,
-                previous_hash=None,
-                new_hash=pdf_hash,
-                snapshot_id=snapshot.id,
-            )
-        finally:
+            # Convert to Markdown
+            markdown = self.markitdown.convert_to_markdown(temp_path)
+
             # Clean up temp file
-            Path(tmp_path).unlink(missing_ok=True)
+            Path(temp_path).unlink()
+
+            return markdown
+
+        except Exception as e:
+            logger.error(f"Failed to download/convert PDF {pdf_url}: {e}")
+            return f"[PDF conversion failed: {e}]"
 
     async def _store_failed_snapshot(self, page: NtaTargetPage, run_id: int, error_message: str) -> None:
         """Store a failed snapshot in the database."""

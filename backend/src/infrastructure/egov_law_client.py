@@ -1,11 +1,13 @@
-"""e-Gov Law API client for fetching Japanese law text.
+"""e-Gov Law API Client for fetching Japanese tax law XML.
 
-Integrates with the e-Gov Law API v2 to retrieve law text in XML format
-and track amendments over time.
+Monitors specific laws (Income Tax Act, Local Tax Act) via the e-Gov Law API v2.
+Stores XML as raw_html and extracts plain text/markdown as fit_markdown.
+Uses the same NtaPageSnapshot table with source_type='EGOV_LAW'.
 """
 
 import hashlib
-import xml.etree.ElementTree as ET
+import re
+import time
 from datetime import UTC, datetime
 
 import httpx
@@ -22,24 +24,24 @@ logger = get_logger(__name__)
 
 
 class EgovLawClient:
-    """Client for e-Gov Law API v2.
+    """e-Gov Law API client for fetching Japanese tax laws.
 
-    Fetches law text in XML format and converts to plain text for LLM analysis.
-    Tracks law amendments via the law history API.
+    Uses the e-Gov Law API v2 to fetch XML representations of tax laws.
+    Detects changes by comparing XML content hashes.
     """
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.base_url = settings.egov_api_base_url
+        self.api_base = settings.egov_api_base_url
 
     async def check_for_changes(self, trigger: CrawlerRunTrigger = CrawlerRunTrigger.MANUAL) -> list[NtaPageChange]:
-        """Check e-Gov API for law updates.
+        """Fetch e-Gov law data and detect changes.
 
         Args:
             trigger: How this check was triggered.
 
         Returns:
-            List of NtaPageChange objects for updated laws.
+            List of NtaPageChange objects for laws where content changed.
         """
         run = NtaCrawlerRun(trigger=trigger)
         self.db.add(run)
@@ -52,71 +54,60 @@ class EgovLawClient:
                 NtaTargetPage.source_type == CrawlerSourceType.EGOV_LAW,
             )
         )
-        target_laws = result.scalars().all()
+        target_pages = result.scalars().all()
 
-        if not target_laws:
-            logger.warning("No active e-Gov law target pages found")
+        if not target_pages:
+            logger.warning("No active e-Gov target pages found")
             run.completed_at = datetime.now(UTC)
             await self.db.flush()
             return []
 
         changes: list[NtaPageChange] = []
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            for law_page in target_laws:
-                try:
-                    change = await self._check_law(client, law_page, run.id)
-                    run.pages_checked += 1
-                    if change:
-                        changes.append(change)
-                        run.pages_changed += 1
-                except Exception as e:
-                    logger.exception(f"Failed to check law {law_page.name}")
-                    run.pages_checked += 1
-                    run.pages_failed += 1
-                    await self._store_failed_snapshot(law_page, run.id, str(e))
+        for page in target_pages:
+            run.pages_checked += 1
+            start_time = time.time()
+
+            try:
+                change = await self._process_egov_law(page, run.id, start_time)
+                if change:
+                    changes.append(change)
+                    run.pages_changed += 1
+            except Exception as e:
+                logger.exception(f"Failed to process e-Gov law {page.name}: {e}")
+                run.pages_failed += 1
+                await self._store_failed_snapshot(page, run.id, str(e))
 
         run.completed_at = datetime.now(UTC)
         await self.db.flush()
 
         logger.info(
-            f"e-Gov law check complete: checked={run.pages_checked}, "
+            f"e-Gov crawler run complete: checked={run.pages_checked}, "
             f"changed={run.pages_changed}, failed={run.pages_failed}"
         )
         return changes
 
-    async def _check_law(self, client: httpx.AsyncClient, law_page: NtaTargetPage, run_id: int) -> NtaPageChange | None:
-        """Check a single law for updates.
+    async def _process_egov_law(self, page: NtaTargetPage, run_id: int, start_time: float) -> NtaPageChange | None:
+        """Process a single e-Gov law and check for changes.
 
-        Args:
-            client: HTTP client.
-            law_page: Target law page (contains law ID in URL).
-            run_id: Crawler run ID.
-
-        Returns:
-            NtaPageChange if law has been updated, None otherwise.
+        Returns NtaPageChange if content has changed, None otherwise.
         """
-        # Extract law ID from the page URL (stored in URL field)
-        # URL format should be like: "egov://340AC0000000033" for 所得税法
-        law_id = law_page.url.replace("egov://", "")
+        # Extract law ID from egov:// URL
+        law_id = self._extract_law_id(page.url)
+        if not law_id:
+            raise ValueError(f"Invalid egov:// URL format: {page.url}")
 
-        logger.info(f"Fetching law {law_page.name} (ID: {law_id})")
+        # Fetch XML from e-Gov API
+        xml_content = await self._fetch_law_xml(law_id)
 
-        # Fetch law text from e-Gov API
-        # Endpoint: GET /api/2/lawdata/{lawId}
-        url = f"{self.base_url}/lawdata/{law_id}"
-        response = await client.get(url)
-        response.raise_for_status()
-
-        # e-Gov API returns XML
-        xml_content = response.text
+        # Hash the XML for change detection
         content_hash = hashlib.sha256(xml_content.encode()).hexdigest()
 
         # Get previous snapshot hash
         prev_result = await self.db.execute(
             select(NtaPageSnapshot)
             .where(
-                NtaPageSnapshot.target_page_id == law_page.id,
+                NtaPageSnapshot.target_page_id == page.id,
                 NtaPageSnapshot.status == SnapshotStatus.SUCCESS,
             )
             .order_by(NtaPageSnapshot.fetched_at.desc())
@@ -125,80 +116,102 @@ class EgovLawClient:
         prev_snapshot = prev_result.scalar_one_or_none()
         prev_hash = prev_snapshot.content_hash if prev_snapshot else None
 
-        # Convert XML to plain text for LLM consumption
-        fit_markdown = self._xml_to_text(xml_content)
+        # Extract plain text for fit_markdown
+        fit_markdown = self._xml_to_markdown(xml_content)
+
+        response_time_ms = int((time.time() - start_time) * 1000)
 
         # Store new snapshot
         snapshot = NtaPageSnapshot(
-            target_page_id=law_page.id,
+            target_page_id=page.id,
             crawler_run_id=run_id,
             content_hash=content_hash,
-            raw_html=xml_content,  # Store XML as "raw_html"
+            raw_html=xml_content,  # Store XML as raw_html
             raw_markdown=None,
             fit_markdown=fit_markdown,
+            extracted_tables=None,
             status=SnapshotStatus.SUCCESS,
+            response_time_ms=response_time_ms,
         )
         self.db.add(snapshot)
         await self.db.flush()
 
         # Check for change
         if prev_hash and prev_hash != content_hash:
-            logger.info(f"Law update detected for {law_page.name}: {prev_hash[:8]}...{content_hash[:8]}")
+            logger.info(f"e-Gov change detected on {page.name}: {prev_hash[:8]}...{content_hash[:8]}")
             return NtaPageChange(
-                page_name=law_page.name,
-                page_url=law_page.url,
+                page_name=page.name,
+                page_url=page.url,
                 previous_hash=prev_hash,
                 new_hash=content_hash,
                 snapshot_id=snapshot.id,
             )
         elif prev_hash is None:
-            logger.info(f"First snapshot for law {law_page.name}: {content_hash[:8]}")
+            logger.info(f"First e-Gov snapshot for {page.name}: {content_hash[:8]}")
 
         return None
 
-    def _xml_to_text(self, xml_content: str) -> str:
-        """Convert e-Gov law XML to plain text.
+    def _extract_law_id(self, egov_url: str) -> str | None:
+        """Extract law ID from egov:// URL.
 
         Args:
-            xml_content: XML content from e-Gov API.
+            egov_url: URL in format egov://LAW_ID
 
         Returns:
-            Plain text representation suitable for LLM analysis.
+            Law ID or None if invalid format.
         """
-        try:
-            root = ET.fromstring(xml_content)
+        if egov_url.startswith("egov://"):
+            return egov_url.replace("egov://", "")
+        return None
 
-            # Extract law name and number
-            law_num = root.find(".//{http://laws.e-gov.go.jp/api/}LawNum")
-            law_name = root.find(".//{http://laws.e-gov.go.jp/api/}LawTitle")
+    async def _fetch_law_xml(self, law_id: str) -> str:
+        """Fetch law XML from e-Gov API.
 
-            lines = []
-            if law_num is not None and law_num.text:
-                lines.append(f"# Law Number: {law_num.text}")
-            if law_name is not None and law_name.text:
-                lines.append(f"# Law Name: {law_name.text}")
-            lines.append("")
+        Args:
+            law_id: e-Gov law identifier.
 
-            # Extract main law body text
-            # The structure varies, but we'll extract all text content
-            for element in root.iter():
-                if element.text and element.text.strip():
-                    # Add element text with some structure
-                    tag = element.tag.split("}")[-1]  # Remove namespace
-                    if tag in ["Article", "Paragraph", "Item"]:
-                        lines.append(f"\n## {tag}")
-                    lines.append(element.text.strip())
+        Returns:
+            XML content as string.
 
-            return "\n".join(lines)
-        except ET.ParseError as e:
-            logger.error(f"Failed to parse e-Gov XML: {e}")
-            # Return raw XML if parsing fails
-            return f"# Raw XML Content\n\n{xml_content}"
+        Raises:
+            httpx.HTTPError: If API request fails.
+        """
+        url = f"{self.api_base}/lawdata/{law_id}"
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.text
 
-    async def _store_failed_snapshot(self, law_page: NtaTargetPage, run_id: int, error_message: str) -> None:
+    def _xml_to_markdown(self, xml_content: str) -> str:
+        """Convert e-Gov law XML to plain text/markdown.
+
+        This is a simple text extraction. A more sophisticated implementation
+        could parse the XML structure and preserve article/section hierarchy.
+
+        Args:
+            xml_content: XML string from e-Gov API.
+
+        Returns:
+            Plain text representation.
+        """
+        # Remove XML tags (simple regex-based approach)
+        # A proper implementation would use xml.etree.ElementTree to parse structure
+        text = re.sub(r"<[^>]+>", " ", xml_content)
+
+        # Clean up whitespace
+        text = re.sub(r"\s+", " ", text)
+        text = text.strip()
+
+        # Add basic structure markers (this is a placeholder - improve as needed)
+        lines = text.split(". ")
+        markdown = "\n\n".join(line.strip() for line in lines if line.strip())
+
+        return markdown
+
+    async def _store_failed_snapshot(self, page: NtaTargetPage, run_id: int, error_message: str) -> None:
         """Store a failed snapshot in the database."""
         snapshot = NtaPageSnapshot(
-            target_page_id=law_page.id,
+            target_page_id=page.id,
             crawler_run_id=run_id,
             content_hash="",
             status=SnapshotStatus.FAILED,
