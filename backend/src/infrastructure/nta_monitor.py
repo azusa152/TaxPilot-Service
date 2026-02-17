@@ -8,7 +8,7 @@ import hashlib
 import time
 from datetime import datetime, timezone
 
-from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlResult, CrawlerRunConfig
 from crawl4ai.content_filter_strategy import PruningContentFilter
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 from sqlalchemy import select
