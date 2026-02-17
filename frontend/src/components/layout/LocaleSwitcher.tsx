@@ -3,16 +3,27 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { routing, type Locale } from "@/i18n/routing";
+import { useUser } from "@/lib/user-context";
+import { useToast } from "@/lib/toast-context";
 
 export function LocaleSwitcher() {
   const t = useTranslations("common.locale");
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const { user, updateLocalePreference } = useUser();
+  const { addToast } = useToast();
 
   function onLocaleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const nextLocale = e.target.value as Locale;
     router.replace(pathname, { locale: nextLocale });
+
+    // Persist to backend if user is logged in
+    if (user) {
+      updateLocalePreference(nextLocale).catch(() => {
+        addToast("Failed to save language preference", "error");
+      });
+    }
   }
 
   return (

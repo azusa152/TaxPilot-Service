@@ -3,6 +3,9 @@ from typing import Any
 # Tax year defaults
 DEFAULT_TAX_YEAR = 2024
 
+# Supported locales
+SUPPORTED_LOCALES = ["ja", "en", "zh-TW", "zh-CN"]
+
 # Income thresholds (JPY)
 BASIC_DEDUCTION = 480_000
 SALARY_DEDUCTION_MIN = 550_000

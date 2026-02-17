@@ -28,9 +28,15 @@ export interface UserCreate {
   display_name?: string | null;
 }
 
+export interface UserUpdate {
+  display_name?: string | null;
+  locale_preference?: string | null;
+}
+
 export interface UserResponse {
   id: string;
   display_name: string | null;
+  locale_preference: string | null;
   created_at: string;
 }
 
@@ -197,6 +203,16 @@ export async function createUser(
 
 export async function getUser(userId: string): Promise<UserResponse> {
   return clientRequest<UserResponse>(`/users/${userId}`);
+}
+
+export async function updateUser(
+  userId: string,
+  data: UserUpdate,
+): Promise<UserResponse> {
+  return clientRequest<UserResponse>(`/users/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }
 
 // ---------------------------------------------------------------------------

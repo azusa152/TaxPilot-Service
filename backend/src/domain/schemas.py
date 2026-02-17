@@ -3,6 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from src.domain.constants import SUPPORTED_LOCALES
 from src.domain.enums import IncomeType, LawChangeType, LlmProvider, NotificationEvent, ReviewDecision, VerificationStatus
 
 
@@ -11,9 +12,18 @@ class UserCreate(BaseModel):
     display_name: str | None = Field(None, description="Display name of the user")
 
 
+class UserUpdate(BaseModel):
+    display_name: str | None = Field(None, description="Display name of the user")
+    locale_preference: str | None = Field(
+        None,
+        description=f"Preferred locale code ({', '.join(SUPPORTED_LOCALES)})",
+    )
+
+
 class UserResponse(BaseModel):
     id: str = Field(description="UUID of the user")
     display_name: str | None = Field(description="Display name of the user")
+    locale_preference: str | None = Field(description="Preferred locale code")
     created_at: datetime = Field(description="Account creation timestamp (ISO 8601)")
 
     model_config = {"from_attributes": True}
